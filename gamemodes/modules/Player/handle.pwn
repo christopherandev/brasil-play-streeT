@@ -6,6 +6,9 @@ hook OnPlayerConnect(playerid, classid)
 {
     if(IsPlayerNPC(playerid)) return -1;
 
+    SendClientMessage(playerid, -1, "{ff9933}[ ! ] Servidor em modo de DEBUG, \
+    se o servidor está público nesse momento, avise um moderador imediatamente!");
+    
     return 1;
 }
 
@@ -46,23 +49,6 @@ hook OnPlayerConnect(playerid)
         Kick(playerid);
         return -1;
     }
-
-    Officine::RemoveGTAObjects(playerid, MAP_MEC_LS);
-    Officine::RemoveGTAObjects(playerid, MAP_MEC_AIRPORT);
-    Org::RemoveGTAObjects(playerid);
-    Store::RemoveGTAObjects(playerid, MAP_STORE_BINCO);
-    Spawn::RemoveGTAObjects(playerid);
-    Square::RemoveGTAObjects(playerid, MAP_SQUARE_HP);
-    Square::RemoveGTAObjects(playerid, MAP_SQUARE_LS);
-    Ammu::RemoveGTAObjects(playerid);
-    Bank::RemoveGTAObjects(playerid, MAP_BANK_LOTTERY);
-    House::RemoveGTAObjects(playerid);
-
-    Login::HideTDForPlayer(playerid);
-    Baseboard::HideTDForPlayer(playerid);
-    Acessory::HideTDForPlayer(playerid);
-    Adm::HideTDForPlayer(playerid);
-    Veh::HideTDForPlayer(playerid);
 
     Login::SetPlayer(playerid);
 
@@ -137,8 +123,6 @@ hook OnPlayerDisconnect(playerid, reason)
         if(Player[playerid][pyr::ocupped_vehicleid] == vehicleid)
             Player[playerid][pyr::ocupped_vehicleid] = INVALID_VEHICLE_ID;
 
-        ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OCCUPED);
-
         Veh::Save(vehicleid);
         Veh::Respawn(vehicleid);
     }
@@ -149,8 +133,7 @@ hook OnPlayerDisconnect(playerid, reason)
         if(IsValidVehicle(vehicleid))
         {
             Player[playerid][pyr::ocupped_vehicleid] = INVALID_VEHICLE_ID;
-            ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OCCUPED);
-
+    
             Veh::Save(vehicleid);
             Veh::Respawn(vehicleid);
         }
@@ -159,8 +142,6 @@ hook OnPlayerDisconnect(playerid, reason)
     DB::SetDataInt(db_entity, "players", "flags", Player[playerid][pyr::flags], "name = '%q'", GetPlayerNameStr(playerid));
 
     Player::ClearData(playerid);
-
-    Adm::RemSpectatorInList(playerid, 1);
 
     return 1;
 }
@@ -209,7 +190,6 @@ hook OnPlayerLogin(playerid)
     return 1;
 }
 
-
 hook OnPlayerSpawn(playerid)
 {    
     if(IsPlayerNPC(playerid)) return -1;
@@ -225,8 +205,7 @@ hook OnPlayerSpawn(playerid)
 
     if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING))
     {
-        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING);  
-        Adm::AddSpectatorInList(playerid); 
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING);
         SetPlayerWeather(playerid, Server[srv::g_weatherid]);
         SetPlayerHealth(playerid, Player[playerid][pyr::health]);
     }
@@ -301,17 +280,102 @@ hook OnPlayerLeaveDynamicArea(playerid, STREAMER_TAG_AREA:areaid)
     return 1;
 }
 
-hook OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
+hook OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstate)
 {
     if(IsPlayerNPC(playerid)) return -1;
 
-    Player::HandleKeySelector(playerid, newkeys, oldkeys);
+    printf("STATE: %d OLD: %d", newstate, oldstate);
+
+    if(newstate == PLAYER_STATE_DRIVER)
+    {
+        new vehicleid = GetPlayerVehicleID(playerid);
+        
+        if(!IsValidVehicle(vehicleid)) return 1; 
+
+        if(!Player::HasVehiclePermission(playerid, vehicleid))
+        {
+            SetVehicleParamsForPlayer(vehicleid, playerid, .doors = 1);
+            RemovePlayerFromVehicle(playerid);
+            return 1;
+        }
+
+        if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_BROKED))
+            return SendClientMessage(playerid, -1, "{ff9933}[ VEH ] {ffffff}Este veículo está {ff9933}quebrado! {ffffff}Chame um mecânico");
+        
+        if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL))
+            return SendClientMessage(playerid, -1, "{ff9933}[ VEH ] {ffffff}Este veículo está {ff9933}sem gasolina! {ffffff}Chame um mecânico");
+
+        if(!(Vehicle[vehicleid][veh::params] & FLAG_PARAM_ENGINE))
+        {
+            SendClientMessage(playerid, -1, "{ffff99}[ VEH ] {ffffff}Aperte {ffff99}'Y' {ffffff}ou digite {ffff99}/motor {ffffff}para ligar o motor.");
+        }
+         
+        Player[playerid][pyr::ocupped_vehicleid] = vehicleid;
+
+        CallLocalFunction("OnVehicleOcupped", "ii", vehicleid, playerid);
+        CallLocalFunction("OnDriverEnterVehicle", "ii", playerid, vehicleid);
+
+        if(!Model_IsManual(GetVehicleModel(vehicleid))) return 1;
+
+        Baseboard::HideTDForPlayer(playerid);
+        Veh::ShowTDForPlayer(playerid);
+
+        new vehname[64];
+        GetVehicleNameByModel(GetVehicleModel(vehicleid), vehname);
+        
+        Veh::UpdateTDForPlayer(playerid, PTD_VEH_TXT_NAME, "Veiculo: ~g~~h~~h~%s", vehname);
+        Veh::UpdateHealth(playerid, vehicleid, Vehicle[vehicleid][veh::health]);
+        Veh::UpdateFuel(playerid, vehicleid, Vehicle[vehicleid][veh::fuel]); 
+
+        Player::CreateTimer(playerid, pyr::TIMER_SPEEDOMETER, "OnSpeedOMeterUpdate", 75, true, "i", playerid);
+    }
+
+    if(oldstate == PLAYER_STATE_DRIVER)
+    {
+        Veh::HideTDForPlayer(playerid);
+        Baseboard::ShowTDForPlayer(playerid);
+        Player::KillTimer(playerid, pyr::TIMER_SPEEDOMETER);
+
+        CallLocalFunction("OnDriverExitVehicle", "i", playerid);   
+
+        new vehicleid = Player[playerid][pyr::ocupped_vehicleid];
+        
+        if(!IsValidVehicle(vehicleid)) return 1; 
+
+        CallLocalFunction("OnVehicleDesocupped", "ii", vehicleid, playerid);
+    }
+
+    if(newstate == PLAYER_STATE_SPECTATING)
+    {
+        Lists::AddElement(pyr::gSpectables, playerid);
+    }
+
+    if(oldstate == PLAYER_STATE_SPECTATING)
+    {
+        Lists::RemoveElement(pyr::gSpectables, playerid);
+        CallLocalFunction("OnSpectatorListUpdate", "ii", playerid, _:newstate);
+    }
 
     return 1;
 }
 
-stock Player::HandleKeySelector(playerid, KEY:newkeys, KEY:oldkeys)
+hook OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
 {
+    if(IsPlayerNPC(playerid)) return -1;
+
+    if((newkeys & KEY_YES) && !(oldkeys & KEY_YES))
+    {
+        new vehicleid = GetPlayerVehicleID(playerid);
+
+        if(IsValidVehicle(vehicleid))
+        {
+            if(!Player::HasVehiclePermission(playerid, vehicleid)) return 1;
+            Veh::ToggleParams(playerid, vehicleid, FLAG_PARAM_ENGINE);
+        }
+
+        return 1;
+    }
+
     if((newkeys & KEY_SECONDARY_ATTACK) && !(oldkeys & KEY_SECONDARY_ATTACK))
     {
         if(Player::HandleResuscitationAction(playerid)) return 1;

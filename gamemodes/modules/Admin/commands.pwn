@@ -123,9 +123,11 @@ YCMD:aw(playerid, params[], help)
         return 1;
     }
 
-    if(!Adm::HandleWork(playerid))
-        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Nenhum jogador online para entrar em modo de trabalho!"); 
-    
+    if(!GetFlag(Admin[playerid][adm::flags], FLAG_ADM_WORKING))
+        Adm::SetWorkMode(playerid);
+    else
+        Adm::UnSetWorkMode(playerid);
+
     return 1;
 }
 

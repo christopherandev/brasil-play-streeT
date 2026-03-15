@@ -39,8 +39,9 @@ enum E_ADMIN
 
 new Admin[MAX_PLAYERS][E_ADMIN];
 
-new List:gAdminSpectates;
-new Iterator:Adm_Iter<MAX_PLAYERS>;
+new List:AdminList;
+new List:pyr::gSpectables;
 
 forward OnSpectatorListUpdate(spectatorid, reason);
+
 forward ban_input_dialog(playerid, dialogid, response, listitem, string:inputtext[]);

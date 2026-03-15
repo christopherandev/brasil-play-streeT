@@ -2,7 +2,7 @@
 
 hook OnGameModeInit()
 {
-    //CA_Init();
+    Streamer_SetVisibleItems(STREAMER_TYPE_OBJECT, 1300);
 
     Server[srv::timestamp] = gettime();
     
@@ -63,7 +63,7 @@ hook OnServerUpdateMilis()
     {
         if(Model_IsManual(GetVehicleModel(i))) continue;
         
-        if(!IsVehicleOccupied(i) || GetFlag(Vehicle[i][veh::flags], FLAG_VEH_BROKED) || GetFlag(Vehicle[i][veh::flags], FLAG_VEH_EMPTY)) continue;
+        if(!IsVehicleOccupied(i) || GetFlag(Vehicle[i][veh::flags], FLAG_VEH_BROKED) || GetFlag(Vehicle[i][veh::flags], FLAG_VEH_OUT_OFFUEL)) continue;
         
         new driverid = GetVehicleDriver(i);
 

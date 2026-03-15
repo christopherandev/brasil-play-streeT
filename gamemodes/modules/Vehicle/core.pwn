@@ -117,37 +117,6 @@ stock Veh::Delete(const owner[], slotid)
     return deleted;
 }
 
-stock Veh::HasPermission(playerid, vehicleid)
-{
-    if(!IsValidVehicle(vehicleid)) 
-        return 0;
-
-    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_SERVER)
-        return 1;
-    
-    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_PLAYER)
-    {
-        if(Vehicle[vehicleid][veh::ownerid] == playerid)
-            return 1;
-
-        SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você só pode usar isso no seu veículo.");
-        return 0;
-    }
-
-    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_ORG)
-    {
-        new ownerid = Vehicle[vehicleid][veh::ownerid];
-
-        if(ownerid == org::Player[playerid][pyr::orgid])
-            return 1;
-
-        SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você não faz parte da {ff3333}%s {ffffff}para fazer isso.", Org[ownerid][org::name]);
-        return 0;
-    }
-
-    return 1;
-}
-
 stock Veh::Create(data[E_VEHICLES])
 {
     new vehicleid = CreateVehicle(data[veh::modelid], 
@@ -202,8 +171,7 @@ stock Veh::Create(data[E_VEHICLES])
     Vehicle[vehicleid][veh::fuel] = data[veh::fuel];
    
     ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_BROKED);
-    ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_EMPTY);
-    ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OCCUPED);
+    ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL);
 
     veh::Timer[vehicleid][veh::TIMER_EMPTY_RESPAWN] = INVALID_TIMER;
 
@@ -492,9 +460,9 @@ stock Veh::UpdateFuel(driverid, vehicleid, Float:fuel)
     Vehicle[vehicleid][veh::fuel] = floatclamp(fuel, 0.0, 60.0);
 
     if(Vehicle[vehicleid][veh::fuel] <= 0.0)
-        SetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_EMPTY);
+        SetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL);
     else
-        ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_EMPTY);
+        ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL);
     
     if(Veh::IsVisibleTDForPlayer(driverid))
         Veh::UpdatePTDBar(driverid, PTD_VEH_BAR_FUEL, 100.0, floatclamp(Vehicle[vehicleid][veh::fuel], 0.0, 60.0) * 1.67);

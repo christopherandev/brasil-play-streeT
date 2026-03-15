@@ -6,9 +6,7 @@
 #include <streamer>
 #include <samp_bcrypt>
 #include <PawnPlus>
-#include <sampvoice>
 #include <discord-connector>
-//#include <colandreas>
 
 #define CGEN_MEMORY 20000
 
@@ -96,7 +94,13 @@
 #include "./gamemodes/modules/Maps/core/arena.pwn"
 #include "./gamemodes/modules/Maps/core/ammu.pwn"
 #include "./gamemodes/modules/Maps/core/house.pwn"
-#include "./gamemodes/modules/Maps/core/groove.pwn"
+#include "./gamemodes/modules/Maps/core/hospital.pwn"
+#include "./gamemodes/modules/Maps/core/cityhall.pwn"
+#include "./gamemodes/modules/Maps/organizations/gangint.pwn"
+#include "./gamemodes/modules/Maps/organizations/groove.pwn"
+#include "./gamemodes/modules/Maps/organizations/triad.pwn"
+#include "./gamemodes/modules/Maps/organizations/pcc.pwn"
+#include "./gamemodes/modules/Maps/organizations/mecblond.pwn"
 //  --------------------------- MAPAS -----------------------------
 
 #include "./gamemodes/modules/Organization/core.pwn"
@@ -160,7 +164,6 @@
 #include "./gamemodes/modules/Player/login/handle.pwn"
 #include "./gamemodes/modules/Player/payday/handle.pwn"
 #include "./gamemodes/modules/Player/acessory/handle.pwn"
-//#include "./gamemodes/modules/Player/voice/handle.pwn"
 //  ------------------------- PLAYERS --------------------------
 
 #include "./gamemodes/modules/Organization/handle.pwn"
@@ -227,6 +230,9 @@ public OnGameModeExit()
         count++;
     }
 
+    list_delete(AdminList);
+    printf("[ LISTAS ] Lista de Admins deletada com sucesso!\n");
+
     printf("[  AREAS  ] %d areas globais foram destruídas com sucesso\n", count);
     printf("[ REGIONS ] %d regioes de jogadores foram deletadas com sucesso\n", count);
     printf("[ REGIONS ] %d regioes de veículos foram deletadas com sucesso\n", count);
@@ -244,9 +250,6 @@ hook function TogglePlayerSpectating(playerid, bool:toggle)
     if(toggle)
     {
         SetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING);
-        
-        if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED))
-            Adm::RemSpectatorInList(playerid, 2);
     }
 
     return continue(playerid, bool:toggle);
@@ -306,7 +309,7 @@ public OnPlayerText(playerid, text[])
 
     if(GetFlag(Admin[playerid][adm::flags], FLAG_ADM_WORKING))
     {      
-        Adm::SendMsgToAllTagged(FLAG_ADM_WORKING | FLAG_IS_ADMIN, 0xFFFF33AA, 
+        Adm::SendMsgToAllTagged(0xFFFF33AA, 
         "[ ADM CHAT ] {%06x}%s {ffffff}: {ffff33}%s", 
         Adm::gColors[Admin[playerid][adm::lvl]], GetPlayerNameStr(playerid), text);  
         return 0;      

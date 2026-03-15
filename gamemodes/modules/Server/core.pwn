@@ -17,11 +17,6 @@ stock Server::UpdatePlayerSeconds()
         else
             SetPlayerTime(i, 12, 0);
     }
-
-    foreach(new i : Adm_Iter)
-    {
-        Adm::Update(i);
-    }
 }
 
 stock Player::UpdatePayday(playerid)

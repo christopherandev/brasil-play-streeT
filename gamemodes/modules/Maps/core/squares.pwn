@@ -2,23 +2,9 @@ stock Square::RemoveGTAObjects(playerid, mapid)
 {
     if(mapid == 1)
     {
-        RemoveBuildingForPlayer(playerid, 620, 1222.660, -1374.609, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1222.660, -1356.550, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 739, 1231.140, -1356.209, 12.734, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1240.920, -1374.609, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1240.920, -1356.550, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1240.920, -1335.050, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 5812, 1230.890, -1337.979, 12.539, 0.250);
-        RemoveBuildingForPlayer(playerid, 5929, 1230.890, -1337.979, 12.539, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1222.660, -1335.050, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1240.920, -1317.739, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1240.920, -1300.920, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1222.660, -1317.739, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 620, 1222.660, -1300.920, 12.296, 0.250);
-        RemoveBuildingForPlayer(playerid, 739, 1231.140, -1328.089, 12.734, 0.250);
-        RemoveBuildingForPlayer(playerid, 739, 1231.140, -1341.849, 12.734, 0.250); 
+        RemoveBuildingForPlayer(playerid, -1, 1231.540, -1338.123, 12.416, 38.617);
     }
-
+    
     if(mapid == 2)
     {
         RemoveBuildingForPlayer(playerid, 4057, 1479.554, -1693.140, 19.578, 0.250);
@@ -136,6 +122,9 @@ stock Square::LoadMap(mapid)
 
     if(mapid == 1)
     {
+        CreateDynamicObject(5794, 1200.910, -1337.990, 12.398, 0.000, 0.000, 0.000);
+        CreateDynamicObject(5808, 1255.240, -1337.960, 12.328, 0.000, 0.000, 0.000);
+
         tmpobjid = CreateDynamicObject(19853, 1231.440917, -1354.718750, 12.326667, 0.000000, 0.000000, 0.000000, -1, -1, -1, 300.00, 300.00); 
         SetDynamicObjectMaterial(tmpobjid, 0, 13691, "bevcunto2_lahills", "stonewall3_la", 0x00000000);
         tmpobjid = CreateDynamicObject(19853, 1231.440917, -1293.558837, 12.196667, 0.000000, 0.000000, 0.000000, -1, -1, -1, 300.00, 300.00); 

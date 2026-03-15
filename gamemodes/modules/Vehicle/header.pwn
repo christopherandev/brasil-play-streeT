@@ -4,8 +4,7 @@
 enum (<<= 1)
 {
     FLAG_VEH_BROKED = 1,
-    FLAG_VEH_EMPTY,
-    FLAG_VEH_OCCUPED
+    FLAG_VEH_OUT_OFFUEL,
 }
 
 enum (<<= 1)

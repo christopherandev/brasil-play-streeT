@@ -155,7 +155,7 @@ stock Player::GiveMoney(playerid, Float:price)
 stock Player::SetNameTag(playerid)
 {
     new str[64];
-    format(str, 64, "{99ff99}%s {ffffff}[ {99ff99}%d {ffffff}]", GetPlayerNameStr(playerid), playerid);
+    format(str, 64, "%s {ffffff}[ {99ff99}%d {ffffff}]", GetPlayerNameStr(playerid), playerid);
     Player[playerid][pyr::nametag]  = CreateDynamic3DTextLabel(str, -1, 0.0, 0.0, 0.0, 70.0, playerid, INVALID_VEHICLE_ID, 1);
 }
 
@@ -213,6 +213,34 @@ stock Player::Spawn(playerid)
         SetSpawnInfo(playerid, 1, Player[playerid][pyr::skinid], 834.28 + RandomFloat(2.0), -1834.89 + RandomFloat(2.0), 12.502, 180.0, WEAPON:0, WEAPON:0, WEAPON:0, WEAPON:0, WEAPON:0, WEAPON:0);
     
     SpawnPlayer(playerid);
+
+    return 1;
+}
+
+stock Player::HasVehiclePermission(playerid, vehicleid)
+{
+    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_SERVER)
+        return 1;
+    
+    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_PLAYER)
+    {
+        if(Vehicle[vehicleid][veh::ownerid] == playerid)
+            return 1;
+
+        SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você só pode usar isso no seu veículo.");
+        return 0;
+    }
+
+    if(Vehicle[vehicleid][veh::owner_type] == OWNER_TYPE_ORG)
+    {
+        new ownerid = Vehicle[vehicleid][veh::ownerid];
+
+        if(ownerid == org::Player[playerid][pyr::orgid])
+            return 1;
+
+        SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você não faz parte da {ff3333}%s {ffffff}para fazer isso.", Org[ownerid][org::name]);
+        return 0;
+    }
 
     return 1;
 }

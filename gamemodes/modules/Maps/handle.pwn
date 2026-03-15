@@ -53,6 +53,24 @@ hook OnGameModeInit()
     Groove::LoadMap();
     DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Groove carregado com sucesso\n"); 
+    Hospital::LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa do Hospital LS carregado com sucesso\n"); 
+    Triad_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Triad carregado com sucesso\n"); 
+    PCC_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa do PCC carregado com sucesso\n"); 
+    MecBlond_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Mecânica carregado com sucesso\n"); 
+    CityHall_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Prefeitura carregado com sucesso\n"); 
+    GangInt_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Interior GAngues carregado com sucesso\n"); 
     return 1;
 }
 
@@ -69,5 +87,10 @@ hook OnPlayerConnect(playerid)
     Bank::RemoveGTAObjects(playerid, MAP_BANK_LOTTERY);
     House::RemoveGTAObjects(playerid);
     Groove::RemoveGTAObjects(playerid);
+    Hospital::RemoveGTAObjects(playerid);
+    Triad_RemoveGTAObjects(playerid);
+    PCC_RemoveGTAObjects(playerid);
+    MecBlond_RemoveGTAObjects(playerid);
+    CityHall_RemoveGTAObjects(playerid);
     return 1;
 }

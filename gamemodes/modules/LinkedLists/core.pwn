@@ -25,3 +25,34 @@ stock GetRegionCellX(regionid)
 
 stock GetRegionCellY(regionid)
     return (regionid / REGION_GRID_SIZE);
+
+stock Lists::HasElement(List:list, AnyTag:element)
+    return (list_find(list, element) != -1);
+
+stock Lists::AddElement(&List:list, GLOBAL_TAG_TYPES:element)
+{
+    if(!list_valid(list) || Lists::HasElement(list, element)) 
+    {
+        //DISCORD_LOG
+        return 0;
+    }
+
+    list_add(list, element);
+    
+    return 1;
+}
+
+stock Lists::RemoveElement(&List:list, AnyTag:element)
+{
+    if(!list_valid(list) || !Lists::HasElement(list, element)) 
+    {
+        //DISCORD_LOG
+        return 0;
+    }
+
+    new idx = list_find(list, element);
+
+    list_remove(list, idx);
+
+    return 1;
+}

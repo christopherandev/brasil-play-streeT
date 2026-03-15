@@ -52,7 +52,9 @@
 #define Groove::            GRV_
 #define Shop::              SHP_
 #define DC::                DCC_
-#define Compy::                COMPY_
+#define Compy::             COMPY_
+#define Lists::             Lists_
+#define Hospital::          HP_
 
 /*          DEFINES          */
 #define DISCORD_LINK        "https://discord.gg/Czq6DWDvcB"
