@@ -1,20 +1,25 @@
-#include <YSI\YSI_Coding\y_hooks>
-
 new Text:Login::PublicTD[7] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Login::PlayerTD[MAX_PLAYERS][3] = {INVALID_PLAYER_TEXT_DRAW, ...};
+new PlayerText:Login::PlayerTD[MAX_PLAYERS][3] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
 new Text:Baseboard::PublicTD[13] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Baseboard::PlayerTD[MAX_PLAYERS][5] = {INVALID_PLAYER_TEXT_DRAW, ...};
+new PlayerText:Baseboard::PlayerTD[MAX_PLAYERS][5] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
 new Text:Acessory::PublicTD[21] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Acessory::PlayerTD[MAX_PLAYERS][14] = {INVALID_PLAYER_TEXT_DRAW, ...};
+new PlayerText:Acessory::PlayerTD[MAX_PLAYERS][14] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
 new Text:Adm::PublicTD[14] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Adm::PlayerTD[MAX_PLAYERS][9] = {INVALID_PLAYER_TEXT_DRAW, ...};
+new PlayerText:Adm::PlayerTD[MAX_PLAYERS][9] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
 new Text:Veh::PublicTD[11] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Veh::PlayerTD[MAX_PLAYERS][18] = {INVALID_PLAYER_TEXT_DRAW, ...};
+new PlayerText:Veh::PlayerTD[MAX_PLAYERS][18] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
+new PlayerText:Travel::PlayerTD[MAX_PLAYERS][2] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+
+new Text:Dealership::PublicTD[13] = {INVALID_TEXT_DRAW, ...};
+new PlayerText:Dealership::PlayerTD[MAX_PLAYERS][5] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+
+new Text:Garage::PublicTD[12]  = {INVALID_TEXT_DRAW, ...};
+new PlayerText:Garage::PlayerTD[MAX_PLAYERS][7] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
 
 /*  LOGIN  */
 enum _:E_TD_LOGIN
@@ -118,55 +123,42 @@ enum _:E_PTD_VEH
     PlayerText:PTD_VEH_TXT_NAME = 17,
 }
 
-hook OnGameModeInit()
+/*  DealerShip  */
+
+enum _:E_TD_DSP
 {
-    Login::CreatePublicTD();
-    printf("[ TEXTDRAW ] TextDraw: Login carregada\n");
-
-    Baseboard::CreatePublicTD();
-    printf("[ TEXTDRAW ] TextDraw: Rodapé carregada\n");
-
-    Acessory::CreatePublicTD();
-    printf("[ TEXTDRAW ] TextDraw: Editor de acessórios carregada\n");
-
-    Adm::CreatePublicTD();
-    printf("[ TEXTDRAW ] TextDraw: Administração\n");
-
-    Veh::CreatePublicTD();
-    printf("[ TEXTDRAW ] TextDraw: Velocimetro\n");
-
-    return 1;
+    Text:TD_DSP_BTN_PREV = 3,
+    Text:TD_DSP_BTN_NEXT = 4,
+    Text:TD_DSP_BTN_BUY = 7,
+    Text:TD_DSP_BTN_QUIT = 6,
+    Text:TD_DSP_BTN_HIDE = 9,
+    Text:TD_DSP_BTN_CAT = 8,
 }
 
-hook OnGameModeExit()
+enum _:E_PTD_DSP
 {
-    // Login::DestroyPublicTD();
-    // Baseboard::DestroyPublicTD();
-    // Acessory::DestroyPublicTD();
-    // Adm::DestroyPublicTD();
-    // Veh::DestroyPublicTD();
-
-    return 1;
+    PlayerText:PTD_DSP_TXT_NAME,
+    PlayerText:PTD_DSP_TXT_PRICE,
+    PlayerText:PTD_DSP_SPR_COLOR1,
+    PlayerText:PTD_DSP_SPR_COLOR2,
+    PlayerText:PTD_DSP_TXT_HIDE,
 }
 
-hook OnPlayerConnect(playerid)
+/*  DealerShip  */
+
+enum _:E_TD_GRG
 {
-    Login::HideTDForPlayer(playerid);
-    Baseboard::HideTDForPlayer(playerid);
-    Acessory::HideTDForPlayer(playerid);
-    Adm::HideTDForPlayer(playerid);
-    Veh::HideTDForPlayer(playerid);
-    
-    return 1;
+    Text:TD_GRG_BTN_PREV = 9,
+    Text:TD_GRG_BTN_NEXT = 10,
 }
 
-hook OnPlayerDisconnect(playerid, reason)
+enum _:E_PTD_GRG
 {
-    Login::HideTDForPlayer(playerid);
-    Baseboard::HideTDForPlayer(playerid);
-    Acessory::HideTDForPlayer(playerid);
-    Adm::HideTDForPlayer(playerid);
-    Veh::HideTDForPlayer(playerid);
-    
-    return 1;
+    PlayerText:PTD_GRG_TXT_NAME,
+    PlayerText:PTD_GRG_BAR_HEALTH,
+    PlayerText:PTD_GRG_BAR_FUEL,
+    PlayerText:PTD_GRG_BAR_ARMOUR,
+    PlayerText:PTD_GRG_TXT_PAGE,
+    PlayerText:PTD_GRG_SPR_COLOR1,
+    PlayerText:PTD_GRG_SPR_COLOR2,
 }

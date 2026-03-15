@@ -1,44 +1,36 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-forward OnSpectatorListUpdate(spectatorid, reason);
-
 hook OnGameModeInit()
 {
-    gAdminSpectates = list_new();
-    return 1;
-}
+    AdminList = list_new();
+    printf("[ LISTA ] Lista de Admins criada com sucesso!\n");
 
-hook OnGameModeExit()
-{
-    list_delete(gAdminSpectates);
-    printf("[ LISTA ] Lista Espectadores Admin deletada!\n");
     return 1;
 }
 
 hook OnPlayerLogin(playerid)
 {
-    Adm::Load(playerid);
+    Adm::LoadData(playerid);
     return 1;
 }
 
 hook OnPlayerDisconnect(playerid, reason)
 {
-    Adm::UnSet(playerid);
-
+    Adm::UnLoadData(playerid);    
     return 1;
 }
 
 public OnSpectatorListUpdate(spectatorid, reason)
 {
-    if(!list_valid(gAdminSpectates)) return 1;
+    if(!list_valid(pyr::gSpectables)) return 0;
 
-    foreach(new i : Adm_Iter)
+    for(new i = 0; i < list_size(AdminList); i++)
     {
         if(Admin[i][adm::spectateid] == spectatorid)
         {
-            SendClientMessage(i, -1, "{ffff33}[ ADM ] {ffffff}O jogador \
-            {ffffff}[ {ffff33}ID: %d {ffffff}] {ffff33}%s", 
-            spectatorid, reason > 1 ? "Saiu do mundo!" :  "Se desconectou!");
+            SendClientMessage(i, -1, 
+            "{ffff33}[ ADM ] {ffffff}O jogador {ffffff}[ {ffff33}ID: %d {ffffff}] {ffff33}%s", 
+            spectatorid, reason != 9 ? "Saiu do mundo!" :  "Se desconectou!");
             
             Admin[i][adm::spectateid] = Adm::GetNextSpectateID(i, 0, 1);
             
@@ -46,40 +38,11 @@ public OnSpectatorListUpdate(spectatorid, reason)
                 Adm::SpectatePlayer(i, Admin[i][adm::spectateid]);
             else
             {
-                Adm::UnSetWork(i);
-                SendClientMessage(i, -1, "{ff3333}[ CMD ] {ffffff}Nenhum jogador online para entrar em modo de trabalho!"); 
+                Command_ReProcess(i, "tvoff", false);
+                SendClientMessage(i, -1, "{ff3333}[ TV ] {ffffff}Nenhum jogador online para entrar em modo de espectador!"); 
             }
         }
     }
 
     return 1;
-}
-
-stock Adm::AddSpectatorInList(spectatorid)   
-{
-    if(!list_valid(gAdminSpectates)) return 0;
-
-    if(list_find(gAdminSpectates, spectatorid) == -1)
-    {
-        list_add(gAdminSpectates, spectatorid);
-        return 1;
-    }
-
-    return 0;
-}
-
-stock Adm::RemSpectatorInList(spectatorid, reason)   
-{   
-    if(!list_valid(gAdminSpectates)) return 0;
-
-    new idx = list_find(gAdminSpectates, spectatorid);
-
-    if(idx != -1)
-    {
-        list_remove(gAdminSpectates, idx);
-        CallLocalFunction("OnSpectatorListUpdate", "ii", spectatorid, reason);
-        return 1;
-    }
-
-    return 0;
 }

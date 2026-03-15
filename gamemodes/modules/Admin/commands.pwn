@@ -1,7 +1,3 @@
-#include <YSI\YSI_Coding\y_hooks>
-
-forward ban_input_dialog(playerid, dialogid, response, listitem, string:inputtext[]);
-
 public ban_input_dialog(playerid, dialogid, response, listitem, string:inputtext[])
 {
     if(!response) return 1;
@@ -10,8 +6,8 @@ public ban_input_dialog(playerid, dialogid, response, listitem, string:inputtext
 
     if(sscanf(inputtext, "s[24]is[64]", name, days, reason)) 
     {
-        SendClientMessage(playerid, -1, "{ff3333}[ ADMIN ] {ffffff}Escreva separando por espaço: {ff3333}NOME + DIAS + MOTIVO {ffffff}para banir");
-        SendClientMessage(playerid, -1, "{ff3333}[ ADMIN ] {ffffff}Ou escreva: {ff3333}NOME + [-1] + MOTIVO {ffffff}para banir permanentemente");
+        SendClientMessage(playerid, -1, "{ff3333}[ ADMIN ] {ffffff}Escreva separando por espaço: {ff3333}NOME + DIAS + MOTIVO {ffffff}para banir.");
+        SendClientMessage(playerid, -1, "{ff3333}[ ADMIN ] {ffffff}Ou escreva: {ff3333}NOME + [-1] + MOTIVO {ffffff}para banir permanentemente.");
         return 1;
     }
 
@@ -63,8 +59,8 @@ YCMD:mkfnd(playerid, params[], help)
     new name[MAX_PLAYER_NAME];
     GetPlayerName(playerid, name);
 
-    if(!Adm::Set(name, "SERVER", 9))
-        SendClientMessage(playerid, COLOR_ERRO, "[ ADM ] {ffffff}Erro Fatal ao setar voce como fundador!");
+    if(!Adm::Set(name, "SERVER", ROLE_ADM_FOUNDER))
+        SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Erro Fatal ao setar voce como fundador!");
     
     return 1;
 }
@@ -77,7 +73,7 @@ YCMD:aa(playerid, params[], help)
         return 1;
     }
 
-    if(!IsFlagSet(Admin[playerid][adm::flags], FLAG_IS_ADMIN)) 
+    if(!GetFlag(Admin[playerid][adm::flags], FLAG_IS_ADMIN)) 
     {
         SendClientMessage(playerid,  -1, "{ff3333}[ ADM ] {ffffff}Voce nao tem permissao para isso!");
         return 1;
@@ -121,15 +117,17 @@ YCMD:aw(playerid, params[], help)
         return 1;
     }
 
-    if(!IsFlagSet(Admin[playerid][adm::flags], FLAG_IS_ADMIN)) 
+    if(!GetFlag(Admin[playerid][adm::flags], FLAG_IS_ADMIN)) 
     {
         SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Voce nao tem permissao para isso!");
         return 1;
     }
 
-    if(!Adm::HandleWork(playerid))
-        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Nenhum jogador online para entrar em modo de trabalho!"); 
-    
+    if(!GetFlag(Admin[playerid][adm::flags], FLAG_ADM_WORKING))
+        Adm::SetWorkMode(playerid);
+    else
+        Adm::UnSetWorkMode(playerid);
+
     return 1;
 }
 
@@ -202,7 +200,7 @@ YCMD:aviso(playerid, params[], help)
     if(!Adm::ValidTargetID(playerid, targetid)) return 1;
 
     SendClientMessage(targetid, -1, "{ff9933}[ AVISO ADMIN ] {ffffff}%s", reason);
-    SendClientMessage(playerid, COLOR_SUCESS, "{ffff33}[ ADM ] {ffffff}Aviso {ffff33}enviado.");
+    SendClientMessage(playerid, -1, "{ffff33}[ ADM ] {ffffff}Aviso {ffff33}enviado.");
 
     return 1;
 }
@@ -509,7 +507,7 @@ YCMD:soltaroff(playerid, params[], help)
     if(!DB::Delete(db_entity, "punishments", "name = '%q' AND level = 1", name))
     {
         SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Não foi possível soltar o jogador {ff3333}%s{ffffff}, pois ele não está preso!", name);
-        printf("[ DB (ERRO) ] Erro ao remover cadeia de %s", name);
+        DC::Log(LOG_TYPE_ERR, "[ DB (ERRO) ] Erro ao remover cadeia de %s", name);
         return -1;
     }
 
@@ -682,7 +680,7 @@ YCMD:desban(playerid, params[], help)
     DB::SetDataInt(db_entity, "punishments", "left_tstamp", 0, "name = '%q' AND level = 2", name);
 
     SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Voce desbaniu {33ff33}%s {ffffff}com sucesso.", name);
-    printf("[ PUNICOES ] O admin %s desbaniu %s.", admin_name, name);
+    DC::Log(LOG_TYPE_WARN, "[ PUNICOES ] O admin %s desbaniu %s.", admin_name, name);
 
     return 1;
 }
@@ -697,20 +695,20 @@ YCMD:setadm(playerid, params[], help)
 
     if(!Adm::HasPermission(playerid, ROLE_ADM_CEO, false)) return 1;
     
-    new name[MAX_PLAYER_NAME], level;
-    if(sscanf(params, "s[24]i", name, level)) 
+    new name[MAX_PLAYER_NAME], E_ROLES_ADMIN:level;
+    if(sscanf(params, "s[24]i", name, _:level)) 
         return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /setadm {ff3333}[ NOME ] [ CARGO <1 - 9>]");
     
     new admin_name[MAX_PLAYER_NAME];
     GetPlayerName(playerid, admin_name);
 
-    level = clamp(level, 1, 9);
+    level = E_ROLES_ADMIN:clamp(_:level, 1, 9);
 
     if(!Adm::Set(name, admin_name, level))
-        return SendClientMessage(playerid, COLOR_ERRO, "[ ADM ] {ffffff}Erro ao setar admin, provavelmente não existe no banco de dados!");
+        return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Erro ao setar admin, provavelmente não existe no banco de dados!");
 
     SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Voce promoveu {33ff33}%s {ffffff}com sucesso.", name);
-    SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Cargo de promoção: %s%s", Adm::GetColorString(level), Adm::gRoleNames[level]);
+    SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Cargo de promoção: {%06x}%s", Adm::gColors[level], Adm::gRoleNames[level]);
     return 1;
 }
 
@@ -734,8 +732,8 @@ YCMD:remadm(playerid, params[], help)
     new admin_name[MAX_PLAYER_NAME];
     GetPlayerName(playerid, admin_name);
 
-    if(!Adm::Set(name, admin_name, 0))
-        return SendClientMessage(playerid, COLOR_ERRO, "[ ADM ] {ffffff}Erro Fatal ao remover admin, procure um programador!");
+    if(!Adm::Set(name, admin_name, INVALID_ADM_ROLE_ID))
+        return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Erro Fatal ao remover admin, procure um programador!");
 
     SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Voce removeu {33ff33}%s {ffffff}com sucesso.", name);
 
@@ -846,59 +844,136 @@ YCMD:cgps(playerid, params[], help)
     return 1;
 }
 
-// YCMD:veh(playerid, params[], help)
-// {
-//     if(help)
-//     {
-//         SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ADM ] {ffffff}Cria um veículo particular.");
-//         return 1;
-//     }
+YCMD:veh(playerid, params[], help)
+{
+    if(help)
+    {
+        SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ADM ] {ffffff}Cria um veículo particular.");
+        return 1;
+    }
 
-//     if(!Adm::HasPermission(playerid, ROLE_ADM_MANAGER, false)) return 1;
+    if(!Adm::HasPermission(playerid, ROLE_ADM_MANAGER, false)) return 1;
 
-//     if(IsValidVehicle(Admin[playerid][adm::vehicleid]))
-//         return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Você já possui um veículo criado. Use {ff3333}/dveh {ffffff}para destrui-lo e criar outro!");
+    if(IsValidVehicle(Admin[playerid][adm::vehicleid]))
+        return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Você já possui um veículo criado. Use {ff3333}/dveh {ffffff}para destrui-lo e criar outro!");
 
-//     if(GetPlayerInterior(playerid))
-//         return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Você não pode criar veículos aqui!");
+    if(GetPlayerInterior(playerid) || GetPlayerVirtualWorld(playerid))
+        return SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você não pode criar veículos aqui!");
 
-//     new modelid;
-//     if(sscanf(params, "i", modelid)) 
-//         return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /veh {ff3333}[ MODELID ]");
+    new modelid, veh_name[32], color1, color2;
+    if(sscanf(params, "i", modelid, color1, color2)) 
+    {
+        if(sscanf(params, "s[32]ii", veh_name, color1, color2)) 
+            return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /veh {ff3333}[ MODELID ou NOME]");
+        
+        modelid = GetVehicleModelByName(veh_name);
+    }
+
+    if(modelid < 400 || modelid > 605) 
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Parâmetro {ff3333}[ MODELID ou NOME ] {ffffff}Inválido!");
     
-//     if(modelid < 400 || modelid > 605) 
-//         return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Parâmetro {ff3333}[ MODELID ] {ffffff}Inválido!");
+    new Float:pX, Float:pY, Float:pZ, Float:pA;
+    GetPlayerPos(playerid, pX, pY, pZ);
+    GetPlayerFacingAngle(playerid, pA);
+
+    new veh_data[E_VEHICLES];
+
+    veh_data[veh::owner_type]   = OWNER_TYPE_ADMIN; 
+    veh_data[veh::ownerid]      = playerid;
+    format(veh_data[veh::owner_name], 32, "Admin_%s", GetPlayerNameStr(playerid));
+    veh_data[veh::modelid]      = modelid;
+    veh_data[veh::pX]           = pX;
+    veh_data[veh::pY]           = pY;
+    veh_data[veh::pZ]           = pZ;
+    veh_data[veh::pA]           = pA;
+    veh_data[veh::fuel]         = 60.0;
+    veh_data[veh::health]       = 2000.0;
+    veh_data[veh::interiorid]   = 0;
+    veh_data[veh::worldid]      = 0;
+    veh_data[veh::params]       = 1;
+    veh_data[veh::color1]       = color1;
+    veh_data[veh::color2]       = color2;
+    veh_data[veh::paintjobid]   = -1;
+
+    Admin[playerid][adm::vehicleid] = Veh::Create(veh_data);
+
+    new Float:health;
+    GetVehicleHealth(Admin[playerid][adm::vehicleid], health);
+
+    PutPlayerInVehicle(playerid, Admin[playerid][adm::vehicleid], 0);
+
+    SendClientMessage(playerid, -1, "{33ff33}[ VEH ] {ffffff}Veículo criado com sucesso!");
+
+    return 1;
+}
+
+YCMD:dveh(playerid, params[], help)
+{
+    if(help)
+    {
+        SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ADM ] {ffffff}Destroí o veículo particular.");
+        return 1;
+    }
+
+    if(!Adm::HasPermission(playerid, ROLE_ADM_MANAGER, false)) return 1;
+
+    if(!IsValidVehicle(Admin[playerid][adm::vehicleid]))
+        return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Você precisa criar um veículo antes. Use {ff3333}/veh [ MODELID ] {ffffff}para isso!");
+
+    DestroyVehicle(Admin[playerid][adm::vehicleid]);
+
+    SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Veículo destruído com sucesso!");
+
+    return 1;
+}
+
+YCMD:saveveh(playerid, params[], help)
+{
+    if(help)
+    {
+        SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ADM ] {ffffff}Salva um veículo em uma posição no banco de dados.");
+        return 1;
+    }
+
+    if(!Adm::HasPermission(playerid, ROLE_ADM_MANAGER, false)) return 1;
+
+    if(!IsPlayerInAnyVehicle(playerid))
+        return SendClientMessage(playerid, -1, "{ffff33}[ ADM ] {ffffff}Você precisa estar dentro de um veículo para isso!");
+
+    new owner[32], slotid, OWNER_TYPES:type;
+    if(sscanf(params, "iis[32]", slotid, _:type, owner)) 
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /saveveh {ff3333}[ DONO (NOME) ] [ DONO (TIPO) ] [ SLOT ]");
     
-//     new Float:pX, Float:pY, Float:pZ;
-//     GetPlayerPos(playerid, pX, pY, pZ);
+    new vehicleid = GetPlayerVehicleID(playerid);
 
-//     Admin[playerid][adm::vehicleid] = CreateVehicle(modelid, pX, pY, pZ, 0.0, RandomMinMax(0, 10), RandomMinMax(0, 10), -1);
-//     PutPlayerInVehicle(playerid, Admin[playerid][adm::vehicleid], 0);
+    new color1, color2;
 
-//     SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Veículo criado com sucesso!");
+    GetVehicleColours(vehicleid, color1, color2);
 
-//     return 1;
-// }
+    new data[E_VEHICLES];
 
-// YCMD:dveh(playerid, params[], help)
-// {
-//     if(help)
-//     {
-//         SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ADM ] {ffffff}Destroí o veículo particular.");
-//         return 1;
-//     }
+    format(data[veh::owner_name], 24, "%s", owner);
+    data[veh::slotid] = slotid;
+    data[veh::owner_type] = type;
+    data[veh::modelid] = GetVehicleModel(vehicleid);
+    data[veh::fuel] = 60.0; 
+    data[veh::health] = 1250.0;
+    data[veh::color1] = color1;
+    data[veh::color2] = color2;
+    data[veh::paintjobid] = GetVehiclePaintjob(vehicleid);
 
-//     if(!Adm::HasPermission(playerid, ROLE_ADM_MANAGER, false)) return 1;
+    if(Veh::Insert(owner, slotid, data))
+    {
+        SendClientMessage(playerid, -1, "{55ff55}[ VEH ] {ffffff}Veículo salvo com sucesso");
+    }
 
-//     if(!IsValidVehicle(Admin[playerid][adm::vehicleid]))
-//         return SendClientMessage(playerid, -1, "{ff3333}[ ADM ] {ffffff}Você precisa criar um veículo antes. Use {ff3333}/veh [ MODELID ] {ffffff}para isso!");
+    else
+    {
+        SendClientMessage(playerid, -1, "{33ff33}[ ERRO ] {ffffff}Um erro fatal aconteceu. Avise um programador!");        
+    }
 
-//     DestroyVehicle(Admin[playerid][adm::vehicleid]);
-
-//     SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Veículo destruído com sucesso!");
-
-//     return 1;
-// }
+    return 1;
+}
 
 YCMD:gmx(playerid, params[], help)
 {
@@ -926,7 +1001,7 @@ YCMD:gmx(playerid, params[], help)
         {
             new str[64];
             GetISODate(str, 64, Server[srv::gmt]);
-            printf("[ GMX ] Gmx realizada em %s. Motivo: %s", str, reason);
+            DC::Log(LOG_TYPE_WARN, "[ GMX ] Gmx realizada em %s. Motivo: %s", str, reason);
             Server[srv::is_count_down] = 0;
             Timer_KillCallback(srv::Timer[srv::TIMER_COUNT_DOWN]);
 
@@ -1008,26 +1083,28 @@ YCMD:darlider(playerid, params[], help)
 
     if(!Adm::HasPermission(playerid, ROLE_ADM_CEO)) return 1;
 
-    new name[MAX_PLAYER_NAME], orgid;
+    new targetid, orgid;
 
-    if(sscanf(params, "s[24]", name, orgid)) 
-        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /darlider {ff3333}[ NOME ] <orgid 1 - %d >", MAX_ORGS);
+    if(sscanf(params, "ui", targetid, orgid)) 
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /darlider {ff3333}[ ID ] <orgid 1 - %d >", MAX_ORGS);
 
-    if(orgid <= 0 || orgid >= MAX_ORGS || !GetFlag(Organization[orgid][org::flags], FLAG_ORG_CREATED))
+    if(orgid < 0 || orgid >= MAX_ORGS || !GetFlag(Org[orgid][org::flags], FLAG_ORG_CREATED))
         return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Parâmetro {ff3333}[ ORGID ] {ffffff}Inválido! Use {ff3333}/allorgs.");
     
-    new admin_name[MAX_PLAYER_NAME];
-    GetPlayerName(playerid, admin_name);
-
-    new sucess = Org::SetLeader(playerid, name, admin_name, orgid);
+    if(org::Player[targetid][pyr::role] >= ORG_ROLE_COLEADER)
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Esse jogador {ff3333}já é um (Co)Líder {ffffff}demita-o antes de usar esse comando!");
+    
+    if(!DB::Exists(db_stock, "organizations", "orgid = %d AND leader = '%q'", orgid, NO_LEADER_NAME))
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}A organização {ff3333}%s {ffffff}já possui um líder, para alterar, remove o atual!", Org[orgid][org::name]);
+    
+    new sucess = Org::SetMember(playerid, targetid, orgid, ORG_ROLE_LEADER);
 
     if(sucess)
-        SendClientMessage(playerid, -1, "{33ff33}[ ADMIN ] {ffffff}Jogador {33ff33}%s {ffffff}setado como lider da organizaçõa {33ff33}%s {ffffff}com sucesso.",
-        name, Organization[orgid][org::name]);
+        SendClientMessage(playerid, -1, "{33ff33}[ ADMIN ] {ffffff}Jogador {33ff33}%s {ffffff}foi setado como lider da organização {33ff33}%s",
+        GetPlayerNameStr(targetid), Org[orgid][org::name]);
 
     return 1;
 }
-
 
 YCMD:darsub(playerid, params[], help)
 {
@@ -1039,148 +1116,25 @@ YCMD:darsub(playerid, params[], help)
 
     if(!Adm::HasPermission(playerid, ROLE_ADM_CEO)) return 1;
 
-    new name[MAX_PLAYER_NAME], orgid;
+    new targetid, orgid;
 
-    if(sscanf(params, "s[24]", name, orgid)) 
-        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /darsub {ff3333}[ NOME ] <orgid 1 - %d >", MAX_ORGS);
+    if(sscanf(params, "ui", targetid, orgid)) 
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /darsub {ff3333}[ ID ] <orgid 1 - %d >", MAX_ORGS);
 
-    if(orgid <= 0 || orgid >= MAX_ORGS || !GetFlag(Organization[orgid][org::flags], FLAG_ORG_CREATED))
+    if(orgid < 0 || orgid >= MAX_ORGS || !GetFlag(Org[orgid][org::flags], FLAG_ORG_CREATED))
         return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Parâmetro {ff3333}[ ORGID ] {ffffff}Inválido! Use {ff3333}/allorgs.");
     
-    new admin_name[MAX_PLAYER_NAME];
-    GetPlayerName(playerid, admin_name);
+    if(org::Player[targetid][pyr::role] >= ORG_ROLE_COLEADER)
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Esse jogador {ff3333}já é um (Co)Líder {ffffff}demita-o antes de usar esse comando!");
 
-    new sucess = Org::SetCoLeader(playerid, name, admin_name, orgid);
+    if(!DB::Exists(db_stock, "organizations", "orgid = %d AND coleader = '%q'", orgid, NO_COLEADER_NAME))
+        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}A organização {ff3333}%s {ffffff}já possui um colíder, para alterar, remove o atual!", Org[orgid][org::name]);
+    
+    new sucess = Org::SetMember(playerid, targetid, orgid, ORG_ROLE_COLEADER);
 
     if(sucess)
-        SendClientMessage(playerid, -1, "{33ff33}[ ADMIN ] {ffffff}Jogador {33ff33}%s {ffffff}setado como colider da organização {33ff33}%s {ffffff}com sucesso.",
-        name, Organization[orgid][org::name]);
+        SendClientMessage(playerid, -1, "{33ff33}[ ADMIN ] {ffffff}Jogador {33ff33}%s {ffffff}setado como colider da organização {33ff33}%s",
+        GetPlayerNameStr(targetid), Org[orgid][org::name]);
 
     return 1;
 }
-
-// YCMD:criarfac(playerid, params[], help)
-// {
-//     if(Player[playerid][pAdmin] < 5) return SendClientMessage(playerid, -1, "Apenas Dono/Fundador.");
-
-//     new corHex, tipo, skin, name[30];
-    
-//     // Sintaxe Nova: /criarfac [Cor] [Tipo] [Skin] [Nome]
-//     // h = Hex, d = Int, i = Int, s = String
-//     if(sscanf(params, "hdis[30]", corHex, tipo, skin, name))
-//     {
-//         SendClientMessage(playerid, COR_V_ESCURO, "USE: /criarfac [CorHEX] [Funcao] [SkinID] [Nome]");
-//         SendClientMessage(playerid, COR_BRANCO, "FUNCOES: 1=Lavagem | 2=Desmanche | 3=Comum");
-//         return 1;
-//     }
-
-//     if(tipo < 1 || tipo > 3) return SendClientMessage(playerid, -1, "Tipo invalido! Use 1, 2 ou 3.");
-//     if(skin < 0 || skin > 311) return SendClientMessage(playerid, -1, "ID de Skin invalido (0-311).");
-
-//     // Procura vaga na memória
-//     new id = -1;
-//     for(new i=1; i < MAX_ORGS; i++) {
-//         if(OrgInfo[i][oCriada] == 0) { id = i; break; }
-//     }
-//     if(id == -1) return SendClientMessage(playerid, -1, "Limite de Orgs atingido!");
-
-//     new Float:x, Float:y, Float:z;
-//     GetPlayerPos(playerid, x, y, z);
-
-//     // INSERE NO MYSQL (COM A SKIN AGORA)
-//     new query[300];
-//     mysql_format(Conexao, query, sizeof(query), 
-//         "INSERT INTO organizacoes (name, cor, tipo, skin, pos_x, pos_y, pos_z) VALUES ('%e', %d, %d, %d, %f, %f, %f)",
-//         name, corHex, tipo, skin, x, y, z
-//     );
-//     mysql_tquery(Conexao, query, "OnFacCriada", "d", id);
-
-//     // Define visualmente temporário
-//     OrgInfo[id][oCriada] = 1;
-//     format(OrgInfo[id][oNome], 30, name);
-//     OrgInfo[id][oCor] = corHex;
-//     OrgInfo[id][oTipo] = tipo;
-//     OrgInfo[id][oSkin] = skin; // Salva a skin na memória
-//     OrgInfo[id][oX] = x; OrgInfo[id][oY] = y; OrgInfo[id][oZ] = z;
-    
-//     // Cria Pickup e Texto
-//     OrgInfo[id][oPickup] = CreatePickup(1239, 1, x, y, z, -1);
-    
-//     new label[128], funcaoStr[20];
-//     if(tipo == 1) funcaoStr = "LAVAGEM";
-//     else if(tipo == 2) funcaoStr = "DESMANCHE";
-//     else funcaoStr = "GUERRA";
-
-//     format(label, sizeof(label), "{FFFFFF}HQ: %s\nFuncao: {FFFF00}%s\n{FFFFFF}Lider: Ninguem", name, funcaoStr);
-//     OrgInfo[id][oLabel] = Create3DTextLabel(label, corHex, x, y, z+0.5, 20.0, 0, 0);
-
-//     new msg[144];
-//     format(msg, sizeof(msg), "Faccao criada! ID: %d | Skin Padrao: %d", id, skin);
-//     SendClientMessage(playerid, COLOR_SUCESS, msg);
-//     return 1;
-// }
-
-
-// YCMD:criarorg(playerid, params[], help)
-// {
-//     if(Player[playerid][pAdmin] < 5) return SendClientMessage(playerid, -1, "Apenas Dono.");
-
-//     new name[30], corHex;
-//     // Ex: /criarorg 0xFF0000AA PCC (Cor Vermelha, Nome PCC)
-//     if(sscanf(params, "xs[30]", corHex, name)) 
-//     {
-//         SendClientMessage(playerid, COR_V_ESCURO, "USE: /criarorg [CorHEX] [Nome]");
-//         SendClientMessage(playerid, COR_BRANCO, "Exemplos de Cores: Vermelho(FFFF0000) Azul(FF0000FF) Verde(FF00FF00)");
-//         return 1;
-//     }
-
-//     // Procura um ID livre (slot vazio)
-//     new id = -1;
-//     for(new i=1; i < MAX_ORGS; i++)
-//     {
-//         if(OrgInfo[i][oCriada] == 0)
-//         {
-//             id = i;
-//             break;
-//         }
-//     }
-
-//     if(id == -1) return SendClientMessage(playerid, -1, "Limite de Orgs atingido!");
-
-//     // Pega a posição do admin
-//     new Float:x, Float:y, Float:z;
-//     GetPlayerPos(playerid, x, y, z);
-
-//     // Salva na Memória
-//     format(OrgInfo[id][oNome], 30, name);
-//     OrgInfo[id][oCor] = corHex;
-//     OrgInfo[id][oX] = x;
-//     OrgInfo[id][oY] = y;
-//     OrgInfo[id][oZ] = z;
-//     OrgInfo[id][oCriada] = 1;
-
-//     // Salva no Arquivo
-//     new file[64];
-//     format(file, sizeof(file), PASTA_ORGS, id);
-//     DOF2_CreateFile(file);
-//     DOF2_SetString(file, "Nome", name);
-//     DOF2_SetInt(file, "Cor", corHex);
-//     DOF2_SetFloat(file, "X", x);
-//     DOF2_SetFloat(file, "Y", y);
-//     DOF2_SetFloat(file, "Z", z);
-//     DOF2_SaveFile();
-
-//     // Cria o visual no jogo na hora
-//     OrgInfo[id][oPickup] = CreatePickup(1239, 1, x, y, z, -1);
-    
-//     new label[100];
-//     format(label, sizeof(label), "{FFFFFF}HQ: %s\n{FFFF00}Digite /menuorg", name);
-//     Create3DTextLabel(label, corHex, x, y, z+0.5, 20.0, 0, 0);
-    
-//     SetPlayerMapIcon(playerid, id, x, y, z, 31, 0, MAPICON_GLOBAL);
-
-//     new msg[128];
-//     format(msg, sizeof(msg), "Org %s (ID %d) criada com sucesso na sua posicao!", name, id);
-//     SendClientMessage(playerid, COLOR_SUCESS, msg);
-//     return 1;
-// }

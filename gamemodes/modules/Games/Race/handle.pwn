@@ -1,14 +1,10 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-hook OnVehicleHealthChance(vehicleid, Float:new_health, Float:old_health)
+hook OnVehicleHealthChange(vehicleid, Float:new_health, Float:old_health)
 {
     #pragma unused old_health
 
-    new raceid, playerid;
-    if(!Race::IsRaceVehicle(vehicleid, raceid, playerid)) return 1;
-
-    if(Game[raceid][game_state] != GAME_STATE_STARTED)
-        return 1;
+    if(!Race::IsRaceVehicle(vehicleid)) return 1;
 
     if(new_health < 2000.0)
         Race::ProtectVehicle(vehicleid);
@@ -117,24 +113,6 @@ hook OnPlayerEnterCheckpoint(playerid)
     Race::UpdatePodium(raceid);
 
     Race::UpdatePlayerCheck(playerid, data);
-
-    return 1;
-}
-
-stock Race::UpdatePlayerCheck(playerid, data[E_RACE_SEAT])
-{
-    new raceid = game::Player[playerid][pyr::gameid];
-
-    SetPlayerCheckpoint(playerid,
-    Race::gCheckpoints[data[race::checkid]][0], 
-    Race::gCheckpoints[data[race::checkid]][1], 
-    Race::gCheckpoints[data[race::checkid]][2], 25.0);
-
-    map_set_arr(Race[raceid][race::participant], playerid, data);
-
-    SendClientMessage(playerid, -1, 
-    "{3399ff}[ CORRIDA ] {ffffff}Checkpoint {3399ff}%d/%d {ffffff}| Volta: {3399ff}%d/%d {ffffff}| Posição: {3399ff}%d| Lugar",
-    data[race::checkid] + 1, sizeof(Race::gCheckpoints), data[race::laps], Race[raceid][race::lap], Race::GetPodiumPlace(raceid, playerid));
 
     return 1;
 }

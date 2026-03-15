@@ -1,24 +1,43 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-forward OnPlayerDied(playerid, killerid, WEAPON:reason);
-forward OnPlayerSpawnAfterDied(playerid, killerid, WEAPON:reason);
-forward PYR_RefreshDeath(playerid, killerid, WEAPON:reason);
+#if defined ON_DEBUG_MODE
+
+hook OnPlayerConnect(playerid, classid)
+{
+    if(IsPlayerNPC(playerid)) return -1;
+
+    SendClientMessage(playerid, -1, "{ff9933}[ ! ] Servidor em modo de DEBUG, \
+    se o servidor está público nesse momento, avise um moderador imediatamente!");
+    
+    return 1;
+}
+
+hook OnPlayerRequestClass(playerid, classid)
+{
+    if(IsPlayerNPC(playerid)) return -1;
+    
+    Login::UnSetPlayer(playerid);
+
+    return 1;
+}
+
+#else
 
 hook OnPlayerConnect(playerid)
 {
     if(IsPlayerNPC(playerid)) return -1;
-            
+    
     ClearChat(playerid, 20);
 
-    Player::ClearAllData(playerid);
+    Player::ClearData(playerid);
 
-    new name[MAX_PLAYER_NAME], issue;
+    new name[MAX_PLAYER_NAME];
     GetPlayerName(playerid, name);
 
     /* VERIFICAR NOME - É ADEQUADO ?  */
-    if(!IsValidPlayerName(name, issue))
+    if(!IsValidNickName(name))
     {
-        SendClientMessage(playerid, -1 , FCOLOR_ERRO "[ KICK ] {ffffff}Seu nome de usuario e invalido: {ff3333}%s", gNameIssue[issue]);
+        SendClientMessage(playerid, -1 , "{ff3333}[ KICK ] {ffffff}Seu nome de usuário e inválido!");
         Kick(playerid);
         return -1; // ENCERRA PROXÍMAS EXECUÇÕES DE hook OnPlayerConnect
     }
@@ -26,216 +45,147 @@ hook OnPlayerConnect(playerid)
     /* VERIFICAR PUNIÇÃO - ESTÁ BANIDO ?  */
     if(!Punish::VerifyPlayer(playerid))
     {
-        SendClientMessage(playerid, -1 , FCOLOR_ERRO "[ KICK ] {ffffff}Você esta {ff3333}banido {ffffff}deste servidor!");
+        SendClientMessage(playerid, -1 , "{ff3333}[ KICK ] {ffffff}Você esta {ff3333}banido {ffffff}deste servidor!");
         Kick(playerid);
         return -1;
     }
 
+    Login::SetPlayer(playerid);
+
     return 1;
 }
 
+#endif
+
 hook OnPlayerDisconnect(playerid, reason)
 {
-    /* JOGADOR É NPC */
     if(IsPlayerNPC(playerid)) return -1;
 
-    /* JOGADOR É VÁLIDO MAS NÃO LOGOU */
-    
-    Player::KillTimer(playerid, pyr::TIMER_LOGIN_KICK);
-
-    if(!IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return -1;
-
-    /* JOGADOR É VÁLIDO / LOGOU / ESTÁ EM MODO ESPECTADOR */
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_SPECTATING)) 
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) 
     {
+        Player::KillTimer(playerid, pyr::TIMER_LOGIN_KICK);
         return -1;
     }
-    
+
+    Player::KillTimer(playerid, pyr::TIMER_PAYDAY);
+
     new name[MAX_PLAYER_NAME];
     GetPlayerName(playerid, name);
 
-    if(IsValidTimer(pyr::Timer[playerid][pyr::TIMER_PAYDAY]))
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING)) 
     {
-        new t_left = GetTimerRemaining(pyr::Timer[playerid][pyr::TIMER_PAYDAY]);
-        DB::SetDataInt(db_entity, "players", "payday_tleft", t_left, "name = '%q'", name);
-        Player::KillTimer(playerid, pyr::TIMER_PAYDAY);
+        TogglePlayerSpectating(playerid, false);
     }
-
-    /* JOGADOR É VÁLIDO / LOGOU / ESTÁ PRESO */
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_IN_JAIL))
+    
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_IN_JAIL))
     {
         if(DB::Exists(db_entity, "punishments", "name = '%q' AND level = 1", name))
-        {
-            new left_time = GetTimerRemaining(pyr::Timer[playerid][pyr::TIMER_JAIL]);
-            DB::SetDataInt(db_entity, "punishments", "left_tstamp", left_time, "name = '%q' AND level = 1", name);
-        }
+            Player::KillTimer(playerid, pyr::TIMER_JAIL);
+    }
+    
+    if(IsPlayerInAnyVehicle(playerid))
+        Player::KillTimer(playerid, pyr::TIMER_SPEEDOMETER);
 
-        Player::KillTimer(playerid, pyr::TIMER_JAIL); 
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_RESUSCITATION))
+    {
+        Player::KillTimer(playerid, pyr::TIMER_RESUSCITATION);
+        
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_RESUSCITATION);
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INVUNERABLE);
+
+        new targetid = Player[playerid][pyr::resuscitation_targetid];
+        if(IsValidPlayer(targetid))
+        {
+            ResetFlag(Player[targetid][pyr::flags], FLAG_PLAYER_RESUSCITATION);
+            Player[targetid][pyr::resuscitation_targetid] = INVALID_PLAYER_ID;
+            TogglePlayerControllable(targetid, GetFlag(Player[targetid][pyr::flags], FLAG_PLAYER_INJURED) ? false : true);
+            ClearAnimations(targetid, SYNC_ALL);
+
+            if(GetFlag(Player[targetid][pyr::flags], FLAG_PLAYER_INJURED))
+                ApplyAnimation(targetid, "SWAT", "gnstwall_injurd", 4.1, true, false, false, true, 0, SYNC_ALL);
+        }
     }
 
-    else if(IsFlagSet(game::Player[playerid][pyr::flags], FLAG_PLAYER_INGAME)) 
-        return 1;
+    Login::HideTDForPlayer(playerid);
+    Baseboard::HideTDForPlayer(playerid);
+    Acessory::HideTDForPlayer(playerid);
+    Adm::HideTDForPlayer(playerid);
+    Veh::HideTDForPlayer(playerid);
 
+    ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INVUNERABLE);
+    ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED);
+    ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_CHECKPOINT);
+    
+    new vehicleid = Player[playerid][pyr::vehicleid];
+
+    if(IsValidVehicle(vehicleid))
+    {
+        if(Player[playerid][pyr::ocupped_vehicleid] == vehicleid)
+            Player[playerid][pyr::ocupped_vehicleid] = INVALID_VEHICLE_ID;
+
+        Veh::Save(vehicleid);
+        Veh::Respawn(vehicleid);
+    }
     else
     {
-        new Float:pX, Float:pY, Float:pZ, Float:pA;
+        vehicleid = Player[playerid][pyr::ocupped_vehicleid];
 
-        GetPlayerName(playerid, name);
-        GetPlayerPos(playerid, pX, pY, pZ);
-        GetPlayerFacingAngle(playerid, pA);
+        if(IsValidVehicle(vehicleid))
+        {
+            Player[playerid][pyr::ocupped_vehicleid] = INVALID_VEHICLE_ID;
     
-        DB::Update(db_entity, "players", 
-        "pX = %f, pY = %f, pZ = %f, pA = %f WHERE name = '%q'",
-        pX, pY, pZ, pA, name);
+            Veh::Save(vehicleid);
+            Veh::Respawn(vehicleid);
+        }
     }
+    
+    DB::SetDataInt(db_entity, "players", "flags", Player[playerid][pyr::flags], "name = '%q'", GetPlayerNameStr(playerid));
 
-    if(IsValidVehicle(Player[playerid][pyr::vehicleid]))
-        Veh::Destroy(Player[playerid][pyr::vehicleid]);
-        
-    Player::DestroyCpfTag(playerid);
-    Adm::RemSpectatorInList(playerid, 1);
-    Player::ClearAllData(playerid);
+    Player::ClearData(playerid);
 
     return 1;
 }
 
 hook OnPlayerLogin(playerid)
 {
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_IN_JAIL))
-    {
-        new time;
-        DB::GetDataInt(db_entity, "punishments", "left_tstamp", time, "name = '%q' AND level = 1", GetPlayerNameStr(playerid));
-        
-        Punish::SendPlayerToJail(playerid, time);
-        SendClientMessage(playerid, -1, "{ff3399}[ PUNICAO ADM ] {ffffff}Voce ainda precisa cumprir sua pena aqui na ilha!");
-        return -1;
-    }
-
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_IS_PARDON))
-    {
-        SendClientMessage(playerid, COLOR_THEME_BPS, "[ BPS ] {ffffff}Você foi {33ff33}perdoado \
-            {ffffff}do seu banimento. Esperamos {33ff33}bom {ffffff}comportamento de agora em diante!");
-        ResetFlag(Player[playerid][pyr::flags], MASK_PLAYER_IS_PARDON);
-    }
-
-    Player[playerid][pyr::health] = 100.0;
-
-    Player::Spawn(playerid);
-
-    /* PÓS SPAWN */
-
-    // CPF
-    Player::SetCPF(playerid);
-
     ApplyAnimation(playerid, "ped", "null", 0.0, false, false, false, false, 0); 
     ApplyAnimation(playerid, "DANCING", "null", 0.0, false, false, false, false, 0); 
     ApplyAnimation(playerid, "CRACK", "null", 0.0, false, false, false, false, 0); 
+    ApplyAnimation(playerid, "SWAT", "null", 0.0, false, false, false, false, 0); 
+    ApplyAnimation(playerid, "KNIFE", "null", 0.0, false, false, false, false, 0); 
+    ApplyAnimation(playerid, "MEDIC", "null", 0.0, false, false, false, false, 0);
+    ApplyAnimation(playerid, "SHOP", "null", 0.0, false, false, false, false, 0);
+    ApplyAnimation(playerid, "COP_AMBIENT", "null", 0.0, false, false, false, false, 0);
 
-    // RODAPÉ
+    Player[playerid][pyr::health] = 100.0;
+
+    Player::SetNameTag(playerid);
+
     Baseboard::ShowTDForPlayer(playerid);
 
     GameTextForPlayer(playerid, "~g~~h~~h~Bem Vindo", 2000, 3);
 
-    SetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INVUNERABLE);
-    Player[playerid][pyr::vehicleid] = INVALID_VEHICLE_ID; 
-
-    return 1;
-}
-
-hook OnPlayerGiveDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart)
-{
-    if(GetFlag(Player[damagedid][pyr::flags], FLAG_PLAYER_INVUNERABLE)) return -1;
-
-    Player::UpdateDamage(damagedid, playerid, amount, weaponid, bodypart);
-    
-    return 1;
-}
-
-stock Player::UpdateDamage(playerid, issuerid, Float:damage, WEAPON:weaponid, bodypart)
-{
-    if(!IsValidPlayer(playerid) && !IsValidPlayer(issuerid)) return 1;
-
-    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_DEATH))  
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_IN_JAIL))
     {
-        GameTextForPlayer(issuerid, "~r~~h~OVERKILL", 1000, 4);
-        return 1;
+        new time;
+        DB::GetDataInt(db_entity, "punishments", "left_tstamp", time, "name = '%q' AND level = 1", GetPlayerNameStr(playerid));
+        Punish::SendPlayerToJail(playerid, time);
+        SendClientMessage(playerid, -1, "{ff3399}[ PUNICAO ADM ] {ffffff}Voce ainda precisa cumprir sua pena aqui na ilha!");
+
+        return -1;
     }
 
-    if(bodypart == 9)
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_IS_PARDON))
     {
-        GameTextForPlayer(issuerid, "~r~H~h~E~h~~h~A~g~~h~~h~D~g~~h~S~b~~h~~h~H~b~O~b~O~p~T", 1000, 4);
-        PlayerPlaySound(issuerid, 1139);
+        SendClientMessage(playerid, -1, "{33ff33}[ BPS ] {ffffff}Você foi {33ff33}perdoado \
+            {ffffff}do seu banimento. Esperamos {33ff33}bom {ffffff}comportamento de agora em diante!");
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_IS_PARDON);
     }
 
-    Player[playerid][pyr::health] = floatclamp(Player[playerid][pyr::health] - damage, 1.0, 200.0);
+    Player::Spawn(playerid);
+
     
-    SetPlayerHealth(playerid, floatclamp(Player[playerid][pyr::health], 1.0, 100.0));
-    SetPlayerArmour(playerid, Player[playerid][pyr::health] <= 100.0 ? 0.0 : Player[playerid][pyr::health] - 100.0);
-
-    if(Player[playerid][pyr::health] <= 1.0)
-    {   
-        GameTextForPlayer(issuerid, "~h~MATOU", 500, 4);
-        GameTextForPlayer(playerid, "~r~~h~MORREU", 500, 4);
-        SetPlayerHealth(playerid, 1.0);
-        SetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_DEATH);
-        CallLocalFunction("OnPlayerDied", "iii", playerid, issuerid, WEAPON:weaponid);
-    }
-
-    return 1;
-}
-
-hook OnPlayerDeath(playerid, killerid, WEAPON:reason)
-{
-    if(!IsValidPlayer(playerid)) return 1;
-
-    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_DEATH)) return 1;
-
-    if(killerid == INVALID_PLAYER_ID) 
-        if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_DEATH))
-            if(reason != WEAPON_DROWN && reason != WEAPON_COLLISION && reason != REASON_EXPLOSION)
-            {
-                printf("[ PVP ] Morte suspeita: %s (ID: %d) morreu sem assassino. Motivo: %d", GetPlayerNameStr(playerid), playerid, _:reason);
-                return 0;
-            }
-    
-    return 1;
-}
-
-stock Player::AplyRandomDeathAnim(playerid, &time)
-{
-    switch(RandomMax(100))
-    {
-        case 0..33:     ApplyAnimation(playerid, "CRACK", "crckdeth1", 4.1, false, false, false, false, 2170, SYNC_ALL), time = 2170; 
-        case 34..66:    ApplyAnimation(playerid, "CRACK", "crckdeth3", 4.1, false, false, false, false, 2170, SYNC_ALL), time = 2170;
-        case 67..100:   ApplyAnimation(playerid, "CRACK", "crckdeth4", 4.1, false, false, false, false, 2170, SYNC_ALL), time = 1670;
-        default: time = 2000;
-    }
-}
-
-public PYR_RefreshDeath(playerid, killerid, WEAPON:reason)
-{
-    Player[playerid][pyr::health] = 100.0;
-    SetPlayerHealth(playerid, 100.0);
-    ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_DEATH);
-
-    SpawnPlayer(playerid);
-
-    Player::KillTimer(playerid, pyr::TIMER_DEATH);
-
-    CallLocalFunction("OnPlayerSpawnAfterDied", "iii", playerid, killerid, reason);
-
-    return 1;
-}
-
-
-hook OnPlayerDied(playerid, killerid, WEAPON:reason)
-{
-    if(!IsValidPlayer(playerid) && !IsValidPlayer(killerid)) return 1;
-
-    new time;
-    Player::AplyRandomDeathAnim(playerid, time);
-
-    Player::CreateTimer(playerid, pyr::TIMER_DEATH, "PYR_RefreshDeath", time, false, "iii", playerid, killerid, reason);
+    SetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_CLOCK);
 
     return 1;
 }
@@ -244,36 +194,45 @@ hook OnPlayerSpawn(playerid)
 {    
     if(IsPlayerNPC(playerid)) return -1;
 
-    if(!IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) 
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) 
     {
         SendClientMessage(playerid, -1, "{ff3333}[ KICK ] {ffffff}Um erro desconhecido aconteceu! Voce spawnou sem estar logado!");
         Kick(playerid);
         return -1;
     }
-    
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_SPECTATING))
+
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_IN_JAIL)) return -1;
+
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING))
     {
-        ResetFlag(Player[playerid][pyr::flags], MASK_PLAYER_SPECTATING);  
-        Adm::AddSpectatorInList(playerid); 
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_SPECTATING);
         SetPlayerWeather(playerid, Server[srv::g_weatherid]);
-
-        return 1;
+        SetPlayerHealth(playerid, Player[playerid][pyr::health]);
     }
 
-    if(IsFlagSet(Player[playerid][pyr::flags], MASK_PLAYER_IN_JAIL))
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INJURED))
     {
-        SetPlayerWeather(playerid, Server[srv::j_weatherid]);
-        return -1;
+        Player[playerid][pyr::health] = 50.0;
+        SetPlayerHealth(playerid, 50.0);
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INJURED);
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INVUNERABLE);
+        ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_RESUSCITATION);
+        Player[playerid][pyr::resuscitation_targetid] = INVALID_PLAYER_ID;
+        
+        Travel::ShowTDForPlayer(playerid, 
+        "A emergencia chegou e~n~Voce foi para o hospital...",
+        1182.2079 + RandomFloatMinMax(-2.0, 2.0), 
+        -1323.2695 + RandomFloatMinMax(-2.0, 2.0), 13.5798, 270.0);      
     }
-   
+
     return 1;
 }
 
 hook OnPlayerEnterCheckpoint(playerid)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_CHECKPOINT)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_CHECKPOINT)) return 1;
     
-    ResetFlag(Player[playerid][pyr::flags], MASK_PLAYER_CHECKPOINT);
+    ResetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_CHECKPOINT);
     DisablePlayerCheckpoint(playerid);
     SendClientMessage(playerid, -1, "{33ff33}[ GPS ] {ffffff}Você chegou ao seu destino!");
     PlayerPlaySound(playerid, 1058, 0.0, 0.0, 0.0); 
@@ -281,11 +240,162 @@ hook OnPlayerEnterCheckpoint(playerid)
     return 1;
 }
 
-stock Player::DestroyCpfTag(playerid)
+hook OnPlayerEnterDynamicArea(playerid, STREAMER_TAG_AREA:areaid)
 {
-    if(IsValidDynamic3DTextLabel(Player[playerid][pyr::cpf_tag]))
+    if(!IsValidPlayer(playerid)) return 1;
+
+    new regionid = GetRegionByArea(areaid);
+    if(regionid == INVALID_REGION_ID) return 1;
+
+    Player::AddToRegion(playerid, regionid);
+    
+    if(IsPlayerInAnyVehicle(playerid))
     {
-        DestroyDynamic3DTextLabel(Player[playerid][pyr::cpf_tag]);
-        Player[playerid][pyr::cpf_tag] = INVALID_3DTEXT_ID;
+        new vehicleid = GetPlayerVehicleID(playerid);
+        if(vehicleid == INVALID_VEHICLE_ID) return 1;
+
+        Veh::AddToRegion(vehicleid, regionid);
     }
+
+    return 1;
+}
+
+hook OnPlayerLeaveDynamicArea(playerid, STREAMER_TAG_AREA:areaid)
+{
+    if(!IsValidPlayer(playerid)) return 1;
+    
+    new regionid = GetRegionByArea(areaid);
+    if(regionid == INVALID_REGION_ID) return 1;
+
+    Player::RemoveFromRegion(playerid);
+    
+    if(IsPlayerInAnyVehicle(playerid))
+    {
+        new vehicleid = GetPlayerVehicleID(playerid);
+        if(vehicleid == INVALID_VEHICLE_ID)  return 1;
+
+        Veh::RemoveFromRegion(vehicleid);
+    }
+
+    return 1;
+}
+
+hook OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstate)
+{
+    if(IsPlayerNPC(playerid)) return -1;
+
+    printf("STATE: %d OLD: %d", newstate, oldstate);
+
+    if(newstate == PLAYER_STATE_DRIVER)
+    {
+        new vehicleid = GetPlayerVehicleID(playerid);
+        
+        if(!IsValidVehicle(vehicleid)) return 1; 
+
+        if(!Player::HasVehiclePermission(playerid, vehicleid))
+        {
+            SetVehicleParamsForPlayer(vehicleid, playerid, .doors = 1);
+            RemovePlayerFromVehicle(playerid);
+            return 1;
+        }
+
+        if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_BROKED))
+            return SendClientMessage(playerid, -1, "{ff9933}[ VEH ] {ffffff}Este veículo está {ff9933}quebrado! {ffffff}Chame um mecânico");
+        
+        if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL))
+            return SendClientMessage(playerid, -1, "{ff9933}[ VEH ] {ffffff}Este veículo está {ff9933}sem gasolina! {ffffff}Chame um mecânico");
+
+        if(!(Vehicle[vehicleid][veh::params] & FLAG_PARAM_ENGINE))
+        {
+            SendClientMessage(playerid, -1, "{ffff99}[ VEH ] {ffffff}Aperte {ffff99}'Y' {ffffff}ou digite {ffff99}/motor {ffffff}para ligar o motor.");
+        }
+         
+        Player[playerid][pyr::ocupped_vehicleid] = vehicleid;
+
+        CallLocalFunction("OnVehicleOcupped", "ii", vehicleid, playerid);
+        CallLocalFunction("OnDriverEnterVehicle", "ii", playerid, vehicleid);
+
+        if(!Model_IsManual(GetVehicleModel(vehicleid))) return 1;
+
+        Baseboard::HideTDForPlayer(playerid);
+        Veh::ShowTDForPlayer(playerid);
+
+        new vehname[64];
+        GetVehicleNameByModel(GetVehicleModel(vehicleid), vehname);
+        
+        Veh::UpdateTDForPlayer(playerid, PTD_VEH_TXT_NAME, "Veiculo: ~g~~h~~h~%s", vehname);
+        Veh::UpdateHealth(playerid, vehicleid, Vehicle[vehicleid][veh::health]);
+        Veh::UpdateFuel(playerid, vehicleid, Vehicle[vehicleid][veh::fuel]); 
+
+        Player::CreateTimer(playerid, pyr::TIMER_SPEEDOMETER, "OnSpeedOMeterUpdate", 75, true, "i", playerid);
+    }
+
+    if(oldstate == PLAYER_STATE_DRIVER)
+    {
+        Veh::HideTDForPlayer(playerid);
+        Baseboard::ShowTDForPlayer(playerid);
+        Player::KillTimer(playerid, pyr::TIMER_SPEEDOMETER);
+
+        CallLocalFunction("OnDriverExitVehicle", "i", playerid);   
+
+        new vehicleid = Player[playerid][pyr::ocupped_vehicleid];
+        
+        if(!IsValidVehicle(vehicleid)) return 1; 
+
+        CallLocalFunction("OnVehicleDesocupped", "ii", vehicleid, playerid);
+    }
+
+    if(newstate == PLAYER_STATE_SPECTATING)
+    {
+        Lists::AddElement(pyr::gSpectables, playerid);
+    }
+
+    if(oldstate == PLAYER_STATE_SPECTATING)
+    {
+        Lists::RemoveElement(pyr::gSpectables, playerid);
+        CallLocalFunction("OnSpectatorListUpdate", "ii", playerid, _:newstate);
+    }
+
+    return 1;
+}
+
+hook OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
+{
+    if(IsPlayerNPC(playerid)) return -1;
+
+    if((newkeys & KEY_YES) && !(oldkeys & KEY_YES))
+    {
+        new vehicleid = GetPlayerVehicleID(playerid);
+
+        if(IsValidVehicle(vehicleid))
+        {
+            if(!Player::HasVehiclePermission(playerid, vehicleid)) return 1;
+            Veh::ToggleParams(playerid, vehicleid, FLAG_PARAM_ENGINE);
+        }
+
+        return 1;
+    }
+
+    if((newkeys & KEY_SECONDARY_ATTACK) && !(oldkeys & KEY_SECONDARY_ATTACK))
+    {
+        if(Player::HandleResuscitationAction(playerid)) return 1;
+        
+        if(Shop::HandleCommands(playerid)) return 1;
+    }
+
+    return 1;
+}
+
+public Player::Kick(playerid, E_PLAYER_TIMERS:timerid, const msg[]) 
+{    
+    Player::KillTimer(playerid, timerid);
+    
+    if(IsPlayerConnected(playerid))
+    {
+        StopAudioStreamForPlayer(playerid);
+        SendClientMessage(playerid, -1, "{ff3333}[ KICK ] {ffffff}%s", msg);
+        Kick(playerid);
+    }
+    
+    return 1; 
 }

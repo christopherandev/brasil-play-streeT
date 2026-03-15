@@ -1,15 +1,30 @@
 YCMD:spawn(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
 
-    Player::Spawn(playerid, true);
-    SendClientMessage(playerid, -1, "[ BPS ] {ffffff}Você foi enviado ao spawn!");
+    if(GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_INJURED) || GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_RESUSCITATION))
+        return SendClientMessage(playerid, -1, "{ff5533}[ BPS ] {ffffff}Você não pode usar /spawn enquanto estiver ferido ou reavivando.");
+
+    Player::Spawn(playerid);
+    SendClientMessage(playerid, -1, "{99ff99}[ BPS ] {ffffff}Você foi enviado ao spawn!");
+    return 1;
+}
+
+YCMD:rev(playerid, params[], help)
+{
+    #pragma unused params, help
+
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
+
+    if(!Player::HandleResuscitationAction(playerid))
+        SendClientMessage(playerid, -1, "{ff5533}[ SOCORRO ] {ffffff}Não há jogadores feridos próximos para reavivar.");
+
     return 1;
 }
 
 YCMD:dance(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
 
     new danceid;
 
@@ -28,7 +43,7 @@ YCMD:dance(playerid, params[], help)
 
 YCMD:skin(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
 
     new skinid;
 
@@ -50,17 +65,17 @@ YCMD:skin(playerid, params[], help)
 
 YCMD:ajuda(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
     
     return 1;
 }
 
 YCMD:acessorios(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
     
-    // if(GetFlag(game::Player[playerid][pyr::flags], FLAG_PLAYER_INGAME) && !GetFlag(game::Player[playerid][pyr::flags], FLAG_PLAYER_FINISHED))
-    //     return SendClientMessage(playerid, -1, "{ff5533}[ ERRO ] {ffffff}Você não pode mexer com acessórios durante o evento!");
+    if(GetFlag(game::Player[playerid][pyr::flags], FLAG_PLAYER_INGAME) && !GetFlag(game::Player[playerid][pyr::flags], FLAG_PLAYER_FINISHED))
+        return SendClientMessage(playerid, -1, "{ff5533}[ ERRO ] {ffffff}Você não pode mexer com acessórios durante o evento!");
 
     acs::ClearData(playerid);
 
@@ -93,24 +108,30 @@ YCMD:acessorios(playerid, params[], help)
 
 YCMD:orgs(playerid, params[], help)
 {
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
+    if(help)
+    {
+        SendClientMessage(playerid, -1, "{ffff33}[ AJUDA ORG ] {ffffff}Veja as organizações atuais e o número de membros online.");
+        return 1;
+    }
+
+    if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
 
     new msg[1024], line[128], org::members[MAX_ORGS];
     
     foreach(new i : Player)
     {
-        if(!IsValidPlayer(i) || Player[i][pyr::orgid] == INVALID_ORG_TYPE) continue;
-        org::members[Player[i][pyr::orgid]]++;
+        if(!IsValidPlayer(i) || org::Player[i][pyr::orgid] == INVALID_ORG_ID) continue;
+        org::members[org::Player[i][pyr::orgid]]++;
     }
 
-    strcat(msg, "{ffffff}Organizacao\t{ff99ff}Lider\t{ffffff}Colider\t{ff99ff}Membros Online\n");
+    strcat(msg, "{ffffff}Organizacao\t{ff99ff}Tipo\t{ffffff}Lider\t{ff99ff}Membros Online\n");
 
-    for(new i = 1; i < MAX_ORGS; i++)
+    for(new i = 0; i < MAX_ORGS; i++)
     {
-        if(!GetFlag(Organization[i][org::flags], FLAG_ORG_CREATED)) continue;
+        if(!GetFlag(Org[i][org::flags], FLAG_ORG_CREATED)) continue;
         
-        format(line, 128, "{%x}%s\t%s\t%s\t{ffffff}%d membros\n", Organization[i][org::color], Organization[i][org::name], 
-        Organization[i][org::leader], Organization[i][org::coleader], org::members[i]);
+        format(line, 128, "{%06x}%s\t%s\t%s\t{99ff99}%d {ffffff}membros\n", Org[i][org::color] >>> 8, Org[i][org::name], 
+        Org::gTypeNames[_:Org[i][org::type]], Org[i][org::leader], org::members[i]);
         
         strcat(msg, line);
     }
@@ -122,56 +143,7 @@ YCMD:orgs(playerid, params[], help)
         return 1;
     }
     
-
     Dialog_ShowCallback(playerid, using inline no_use_dialog, DIALOG_STYLE_TABLIST_HEADERS, "Orgs do Servidor", msg, "Fechar");
    
-    return 1;
-}
-
-YCMD:veh(playerid, params[], help)
-{
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
-
-    if(IsValidVehicle(Player[playerid][pyr::vehicleid]))
-        return SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você já possui um veículo criado. Use {ff3333}/dveh {ffffff}para destrui-lo e criar outro!");
-
-    if(GetPlayerInterior(playerid) || GetPlayerVirtualWorld(playerid))
-        return SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você não pode criar veículos aqui!");
-
-    new modelid, veh_name[32];
-    if(sscanf(params, "i", modelid)) 
-    {
-        if(sscanf(params, "s[32]", veh_name)) 
-            return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /veh {ff3333}[ MODELID ou NOME]");
-        
-        modelid = GetVehicleModelByName(veh_name);
-    }
-
-    if(modelid < 400 || modelid > 605) 
-        return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Parâmetro {ff3333}[ MODELID ou NOME ] {ffffff}Inválido!");
-    
-    new Float:pX, Float:pY, Float:pZ, Float:pA;
-    GetPlayerPos(playerid, pX, pY, pZ);
-    GetPlayerFacingAngle(playerid, pA);
-
-    Player[playerid][pyr::vehicleid] = Veh::Create(modelid, pX, pY, pZ, pA, RandomMinMax(0, 10), RandomMinMax(0, 10), 0, 0, 0);
-    PutPlayerInVehicle(playerid, Player[playerid][pyr::vehicleid], 0);
-
-    SendClientMessage(playerid, -1, "{33ff33}[ VEH ] {ffffff}Veículo criado com sucesso!");
-
-    return 1;
-}
-
-YCMD:dveh(playerid, params[], help)
-{
-    if(!GetFlag(Player[playerid][pyr::flags], MASK_PLAYER_LOGGED)) return 1;
-
-    if(!IsValidVehicle(Player[playerid][pyr::vehicleid]))
-        return SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você precisa criar um veículo antes. Use {ff3333}/veh [ MODELID ou NOME ] {ffffff}para isso!");
-
-    Veh::Destroy(Player[playerid][pyr::vehicleid]);
-
-    SendClientMessage(playerid, -1, "{33ff33}[ ADM ] {ffffff}Veículo destruído com sucesso!");
-
     return 1;
 }

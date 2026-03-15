@@ -1,113 +1,127 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-#define INVALID_OWNER_ID (-1)
-
-forward OnSpeedOMeterUpdate(playerid);
-
-hook OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstate)
+hook OnVehicleUpdate(driverid, vehicleid)
 {
-    if(newstate == PLAYER_STATE_DRIVER || newstate == PLAYER_STATE_PASSENGER)
+    new Float:Nhealth;
+
+    GetVehicleHealth(vehicleid, Nhealth);
+    
+    new Float:Ohealth = Vehicle[vehicleid][veh::health];
+
+    if(Ohealth != Nhealth)
     {
-        new vehicleid = GetPlayerVehicleID(playerid);
-
-        if(IsFlagSet(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD))
-        {
-            SendClientMessage(playerid, -1, "{ff9933}[ ! ] {ffffff}Este veículo está quebrado! Chame um mecânico");
-            RemovePlayerFromVehicle(playerid);
-            return 1;
-        }
-
-        if(IsValidVehicle(vehicleid))
-        {
-            if(!(Vehicle[vehicleid][veh::params] & FLAG_PARAM_ENGINE))
-                SendClientMessage(playerid, -1, "{ffff99}[ VEH ] {ffffff}Aperte {ffff99}'N' {ffffff}ou digite {ffff99}/motor {ffffff}para ligar o motor.");
-        }
-
-        Baseboard::HideTDForPlayer(playerid);
-        Veh::ShowTDForPlayer(playerid);
-        Player::CreateTimer(playerid, pyr::TIMER_SPEEDOMETER, "OnSpeedOMeterUpdate", 32, true, "i", playerid);
+        CallLocalFunction("OnVehicleHealthChange", "iiff", vehicleid, driverid, Nhealth, Ohealth);
     }
 
-    else if(oldstate == PLAYER_STATE_DRIVER || oldstate == PLAYER_STATE_PASSENGER)
+    if(Vehicle[vehicleid][veh::tick] < GetTickCount()) 
     {
-        //Player::KillTimer(playerid, pyr::TIMER_SPEEDOMETER);
-        //Veh::HideTDForPlayer(playerid);
-        Baseboard::ShowTDForPlayer(playerid);
+        new 
+            speed       = GetVehicleSpeed(vehicleid),
+            tick        = GetTickCount(),
+            Float:dt    = float(tick - Vehicle[vehicleid][veh::tick]) / 1000.0,
+            Float:accel = (speed - Vehicle[vehicleid][veh::o_speed]) / dt,
+            Float:fuel
+        ; 
+
+        accel = ((accel * 0.2) + (0.8 * Vehicle[vehicleid][veh::o_accel])) * (0.277);
+        fuel = Veh::GetVehicleFuelUsed(speed / 3.6, accel, dt);
+
+        new Float:Ofuel = Vehicle[vehicleid][veh::fuel];
+        new Float:Nfuel = Ofuel - fuel;
+
+        if(Ofuel != Nfuel)
+        {
+            CallLocalFunction("OnVehicleFuelChange", "iiff", vehicleid, driverid, Nfuel, Ofuel);
+        
+            Vehicle[vehicleid][veh::o_speed] = speed;
+            Vehicle[vehicleid][veh::o_accel] = accel;
+        }
+
+        Vehicle[vehicleid][veh::tick] = tick + 1000;
     }
+
+    else if(!Vehicle[vehicleid][veh::tick])       
+        Vehicle[vehicleid][veh::tick] = GetTickCount() + 1000;
 
     return 1;
 }
 
-hook OnVehicleHealthChance(vehicleid, Float:new_health, Float:old_health)
+
+
+hook OnVehicleOcupped(playerid, vehicleid)
 {
-    #pragma unused old_health
+    if(IsPlayerNPC(playerid)) return -1;
+    
+    Veh::CreateTimer(vehicleid, veh::TIMER_EMPTY_RESPAWN, "OnVehicleEmptyTimeout", 180000, false, "ii", vehicleid, playerid);
 
-    new raceid, playerid;
-    if(Race::IsRaceVehicle(vehicleid, raceid, playerid) && Game[raceid][game_state] == GAME_STATE_STARTED)
-        return 1;
+    return 1;
+}
 
-    if(!IsFlagSet(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD))
+hook OnVehicleDesocupped(playerid, vehicleid)
+{
+    Veh::KillTimer(vehicleid, veh::TIMER_EMPTY_RESPAWN);
+    
+    return 1;
+}
+
+hook OnVehicleHealthChange(vehicleid, driverid, Float:new_health, Float:old_health)
+{
+    if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_BROKED))
     {
-        if(new_health <= 250.0)
-        {
-            new Float:qw, Float:qx, Float:qy, Float:qz;
-            GetVehicleRotationQuat(vehicleid, qw, qx, qy, qz);
-
-            // m33 < 0: eixo "up" invertido -> veículo tombado/capotado.
-            new Float:m33 = 1.0 - 2.0 * (qx * qx + qy * qy);
-            if(m33 < 0.0)
-            {
-                new Float:x, Float:y, Float:z, Float:a;
-                GetVehiclePos(vehicleid, x, y, z);
-                GetVehicleZAngle(vehicleid, a);
-                SetVehiclePos(vehicleid, x, y, z + 0.15);
-                SetVehicleZAngle(vehicleid, a);
-            }
-
-            SetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD);
-            
-            Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
-
-            SetVehicleHealth(vehicleid, 390.0);
-            Vehicle[vehicleid][veh::health] = 390.0;
-
-            SetVehicleVelocity(vehicleid, 0.0, 0.0, 0.0);
-
-            foreach (new i : VehicleOccupant[vehicleid])
-            {
-                SendClientMessage(i, -1, "{ff9933}[ ! ] {ffffff}Este veículo está quebrado! Chame um mecânico");
-                RemovePlayerFromVehicle(i);
-            }
-        }
+        Veh::UpdateHealth(driverid, vehicleid, 390.0);
+        Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
+        return 1;
     }
+
+    if(!IsValidPlayer(driverid)) return 1;
+
+    if(Race::IsRaceVehicle(vehicleid)) return 1;
+
+    if(new_health <= 250.0)
+    {
+        Veh::Flip(vehicleid);
+        SetVehicleVelocity(vehicleid, 0.0, 0.0, 0.0);
+        Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
+
+        SetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_BROKED);
+
+        Veh::UpdateHealth(driverid, vehicleid, 390.0);
+
+        foreach (new i : VehicleOccupant[vehicleid])
+            SendClientMessage(i, -1, "{ff9933}[ VEH ] {ffffff}Este veículo está {ff9933}quebrado! {ffffff}Chame um mecânico");
+
+        CallLocalFunction("OnVehicleBroke", "ii", vehicleid, driverid);
+        
+        return 1;
+    }
+
+    if(old_health > 1000.0)
+    {
+        RepairVehicle(vehicleid);
+    
+        if(new_health <= 1000.0)
+            SendClientMessage(driverid, -1, "{ff9933}[ VEH ] {ffffff}Seu veículo perdeu a {ff9933}blindagem!");
+    }
+
+    Veh::UpdateHealth(driverid, vehicleid, new_health);
     
     return 1;
 }
 
 public OnSpeedOMeterUpdate(playerid)
 {
-    if(!IsValidTimer(pyr::Timer[playerid][pyr::TIMER_SPEEDOMETER])) return 1;
-
-    if(!IsPlayerInAnyVehicle(playerid))
-    {
-        Player::KillTimer(playerid, pyr::TIMER_SPEEDOMETER);
-        Veh::HideTDForPlayer(playerid);
-        return 1;
-    }
-
     new vehicleid = GetPlayerVehicleID(playerid);
 
-    if(IsFlagSet(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD))
+    if(!IsValidVehicle(vehicleid))
     {
-        Veh::UpdateTDForPlayer(playerid, PTD_VEH_TXT_SPEED, "X");
+
         return 1;
     }
 
     new 
-        speed = GetVehicleSpeed(vehicleid),
-        Float:health
+        speed = GetVehicleSpeed(vehicleid)
     ; 
-
+    
     new fully_dots = floatround(speed / 20) + PTD_VEH_FIRST_DOT;
 
     if(fully_dots > PTD_VEH_LAST_DOT) fully_dots = PTD_VEH_LAST_DOT;
@@ -121,176 +135,81 @@ public OnSpeedOMeterUpdate(playerid)
     for(new i = fully_dots + 1; i <= PTD_VEH_LAST_DOT; i++)
         Veh::UpdateTextDrawColor(playerid, i, 0 | 0xFF);
     
-    GetVehicleHealth(vehicleid, health);
-
-    Veh::UpdatePTDBar(playerid, PTD_VEH_BAR_HEALTH, 100.0, floatclamp(health - 250.0, 0.0, 750.0)/7.5);
-    Veh::UpdatePTDBar(playerid, PTD_VEH_BAR_ARMOUR, 100.0, floatclamp(health - 1000.0, 0.0, 1000.0)/10.0);
-    Veh::UpdateTDForPlayer(playerid, PTD_VEH_TXT_SPEED, "%d", speed);
+    Veh::UpdateTDForPlayer(playerid, PTD_VEH_TXT_SPEED, "%i", speed);
 
     return 1;
 }
 
-stock GetVehicleSpeed(vehicleid)
+hook OnVehicleFuelChange(vehicleid, driverid, Float:new_fuel, Float:old_fuel)
 {
-    new Float:vX, Float:vY, Float:vZ;
-    GetVehicleVelocity(vehicleid, vX, vY, vZ);
+    #pragma unused old_fuel
 
-    new Float:speed =
-        floatsqroot(
-            floatpower(vX, 2) +
-            floatpower(vY, 2) +
-            floatpower(vZ, 2)
-        );
+    if(GetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL))
+    {
+        Veh::UpdateFuel(driverid, vehicleid, 0.0);
+        Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
+        return 1;
+    }
     
-    // Float:0x43431F38 = 195.121948
-    return floatround(speed * Float:0x43431F38); 
-}
+    if(!IsValidPlayer(driverid)) return 1;
 
-hook OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
-{
-    if(newkeys == KEY_NO)
+    if(new_fuel <= 0.0)
     {
-        if(!IsPlayerInAnyVehicle(playerid)) return 1;
+        Veh::UpdateFuel(driverid, vehicleid, 0.0);
+        Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
+        SetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_OUT_OFFUEL);
+        SendClientMessage(driverid, -1, "{ff3333}[ VEH ] {ffffff}Gasolina acabou. Procure um {ff3333}serviço mecânico ou abasteça!");
         
-        new vehicleid = GetPlayerVehicleID(playerid);
-
-        if(IsFlagSet(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD))
-        {
-            SendClientMessage(playerid, -1, "{ff9933}[ ! ] {ffffff}Este veículo está quebrado! Chame um mecânico");
-            return 1;
-        }
-
-        if(GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_ENGINE))
-        {
-            Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 0);
-            GameTextForPlayer(playerid, "~r~~h~Motor OFF", 1500, 3);
-            PlayerPlaySound(playerid, 21000, 0.0, 0.0, 0.0);
-        }
-
-        else
-        {
-            Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, 1);
-            GameTextForPlayer(playerid, "~g~~h~Motor ON", 1500, 3);
-            PlayerPlaySound(playerid, 21001, 0.0, 0.0, 0.0);
-        } 
-
         return 1;
     }
 
-    if(newkeys == KEY_YES) 
+    if(new_fuel < 15.0 && veh::Player[driverid][pyr::tick_gas_notify] <= GetTickCount())
     {
-        if(IsPlayerInAnyVehicle(playerid)) return 1;
-
-        new Float:distance;
-        new vehicleid = GetClosestVehicle(playerid, distance);
-
-        if(vehicleid == INVALID_VEHICLE_ID || distance > 2.0) return 1;
-        
-        if(GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_DOORS))
-        {
-            Veh::UpdateParams(vehicleid, FLAG_PARAM_DOORS, 0);
-            GameTextForPlayer(playerid, "~g~~h~Aberto", 2000, 3);
-            PlayerPlaySound(playerid, 21000, 0.0, 0.0, 0.0);
-        }
-
-        else
-        {
-            Veh::UpdateParams(vehicleid, FLAG_PARAM_DOORS, 1);
-            GameTextForPlayer(playerid, "~r~~h~Trancado", 2000, 3);
-            PlayerPlaySound(playerid, 21001, 0.0, 0.0, 0.0);
-        }
-
-        return 1;
+        SendClientMessage(driverid, -1, "{ff9933}[ VEH ] {ffffff}Gasolina abaixo de {ff9933}25%% {ffffff}procure um posto para abastecer!");   
+        veh::Player[driverid][pyr::tick_gas_notify] = GetTickCount() + (2 * 60000);
     }
+
+    Veh::UpdateFuel(driverid, vehicleid, new_fuel);
 
     return 1;
 }
 
-stock Veh::Create(modelid, Float:x, Float:y, Float:z, Float:rotation, c1, c2, interiorid, vw, flags)
+hook OnVehicleStreamOut(vehicleid, forplayerid)
 {
-    new vehicleid = CreateVehicle(modelid, x, y, z, rotation, c1, c2, -1);
+    if(!IsValidVehicle(vehicleid)) return 1;
 
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_ENGINE, flags & FLAG_PARAM_ENGINE);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_LIGHTS, flags & FLAG_PARAM_LIGHTS);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_ALARM, flags & FLAG_PARAM_ALARM);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_DOORS, flags & FLAG_PARAM_DOORS);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_BONNET, flags & FLAG_PARAM_BONNET);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_BOOT, flags & FLAG_PARAM_BOOT);
-    Veh::UpdateParams(vehicleid, FLAG_PARAM_OBJECTIVE, flags & FLAG_PARAM_OBJECTIVE);
-
-    Vehicle[vehicleid][veh::health] = 1500.0;
-    SetVehicleHealth(vehicleid, 1500.0);
-    ResetFlag(Vehicle[vehicleid][veh::flags], FLAG_VEH_IS_DEAD);
-
-    LinkVehicleToInterior(vehicleid, interiorid);
-    SetVehicleVirtualWorld(vehicleid, vw);
-
-    return vehicleid;
+    if(Player[forplayerid][pyr::ocupped_vehicleid] != vehicleid) return 1;
+    
+    return 1;
 }
 
-stock Veh::Clear(vehicleid)
+public OnVehicleEmptyTimeout(vehicleid, forplayerid)
 {
-    Vehicle[vehicleid][veh::regionid] = INVALID_REGION_ID;
-    Vehicle[vehicleid][veh::owner_type] = 0;
-    Vehicle[vehicleid][veh::ownerid] = INVALID_OWNER_ID;
-    Vehicle[vehicleid][veh::flags] = 0;
-    Vehicle[vehicleid][veh::params] = 0;
-    Vehicle[vehicleid][veh::health] = 0.0;
-}
+    Veh::Respawn(vehicleid);    
 
-stock Veh::SetOwner(vehicleid, ownerid, type)
-{
-    Vehicle[vehicleid][veh::ownerid] = ownerid;
-    Vehicle[vehicleid][veh::owner_type] = type;
-}
-
-hook function CreateVehicle(modelid, Float:x, Float:y, Float:z, Float:rotation, colour1, colour2, respawn_delay, bool:add_siren = false)
-{
-    new regionid = GetRegionFromXY(x, y);
-
-    new vehicleid = continue(modelid, x, y, z, rotation, colour1, colour2, respawn_delay, add_siren);
-
-    if(vehicleid != INVALID_VEHICLE_ID)
+    switch(Vehicle[vehicleid][veh::owner_type])
     {
-        CallLocalFunction("OnVehicleCreate", "iiifff", vehicleid, modelid, regionid, x, y, z);
-        
-        if(regionid != INVALID_REGION_ID) 
-            Veh::AddToRegion(vehicleid, regionid);
+        case OWNER_TYPE_PLAYER:
+        {
+            if(IsValidPlayer(forplayerid))
+                SendClientMessage(forplayerid, -1, "{ff9933}[ VEH ] {ffffff}Seu veículo retornou para garagem por {ff9933}desocupação");
+        }
+
+        case OWNER_TYPE_ORG:
+        {
+            if(IsValidPlayer(forplayerid))
+            {
+                SendClientMessage(forplayerid, -1, "{ff9933}[ VEH ] {ffffff}O veículo {ff9933}[ {ffffff}SID %d {ff9933}] {ffffff}retornou para garagem da organização por {ff9933}desocupação",
+                Vehicle[vehicleid][veh::slotid]);
+            }
+        }
+
+        default:
+        {
+            if(IsValidPlayer(forplayerid))
+                SendClientMessage(forplayerid, -1, "{ff9933}[ VEH ] {ffffff}O veículo que você estava voltou para {ff9933}seu local.");
+        }
     }
 
-    return vehicleid;
-}
-
-stock Veh::Destroy(&vehicleid)
-{
-    if(IsValidVehicle(vehicleid))
-        DestroyVehicle(vehicleid);
-    
-    Veh::Clear(vehicleid);
-    vehicleid = INVALID_VEHICLE_ID;
-}
-
-hook function DestroyVehicle(vehicleid)
-{
-    Veh::RemoveFromRegion(vehicleid);
-    CallLocalFunction("OnVehicleDestroy", "i", vehicleid);
-    return continue(vehicleid);
-}
-
-stock Veh::UpdateParams(vehicleid, params, status)
-{  
-    if(status)
-        SetFlag(Vehicle[vehicleid][veh::params], params);
-    else
-        ResetFlag(Vehicle[vehicleid][veh::params], params);
-
-    SetVehicleParamsEx(vehicleid,
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_ENGINE), 
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_LIGHTS),
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_ALARM),
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_DOORS),
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_BONNET), 
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_BOOT),
-    GetFlag(Vehicle[vehicleid][veh::params], FLAG_PARAM_OBJECTIVE) 
-    );
+    return 1;
 }

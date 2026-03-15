@@ -3,41 +3,74 @@
 hook OnGameModeInit()
 {
     Bank::LoadMap(MAP_BANK_NU);
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa do Nubank carregado com sucesso\n");
     Bank::LoadMap(MAP_BANK_LOTTERY);
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Loterica carregado com sucesso\n");
     Dealership::LoadMap();
-    print("[ MAPA ] Mapa da Concessionária carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Concessionaria carregado com sucesso\n");
     Garage::LoadMap();
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa das Garagens carregado com sucesso\n");
     Org::LoadMap();
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da PRF carregado com sucesso\n");
     Spawn::LoadMap();
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa do Spawn carregado com sucesso\n");
     Store::LoadMap(MAP_STORE_247);
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Loja carregado com sucesso\n");
     Store::LoadMap(MAP_STORE_BINCO);
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Loja carregado com sucesso\n");
     Square::LoadMap(MAP_SQUARE_HP);
-    print("[ MAPA ] Mapa da Praça Hospital carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Praca Hospital carregado com sucesso\n");
     Square::LoadMap(MAP_SQUARE_LS);
-    print("[ MAPA ] Mapa da Praça LS carregado com sucesso\n");
-    // Officine::LoadMap(MAP_MEC_LS);
-    // print("[ MAPA ] Mapa da Mecânica LS carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Praca LS carregado com sucesso\n");
     Officine::LoadMap(MAP_MEC_AIRPORT);
-    print("[ MAPA ] Mapa da Mecânia Aeroporto carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Mecania Aeroporto carregado com sucesso\n");
     Officine::LoadMap(MAP_MEC_DROP);
-    print("[ MAPA ] Mapa da Mecânia Drop carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Mecania Drop carregado com sucesso\n");
     Prision::LoadMap();
-    print("[ MAPA ] Mapa da Prisão staff carregado com sucesso\n");
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Prisao staff carregado com sucesso\n");
     Arena::LoadMap();
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Arena PvP carregado com sucesso\n");
     Ammu::LoadMap();
+    DC::LoadCountMaps++;
     print("[ MAPA ] Mapa da Arena PvP carregado com sucesso\n");
     House::LoadMap();
-    print("[ MAPA ] Mapa do Predio carregado com sucesso\n");
-    /* HANDLE CARREGAMENTO GERAL */
-
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa do Predio carregado com sucesso\n");   
+    Groove::LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Groove carregado com sucesso\n"); 
+    Hospital::LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa do Hospital LS carregado com sucesso\n"); 
+    Triad_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Triad carregado com sucesso\n"); 
+    PCC_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa do PCC carregado com sucesso\n"); 
+    MecBlond_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Mecânica carregado com sucesso\n"); 
+    CityHall_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Mapa da Prefeitura carregado com sucesso\n"); 
+    GangInt_LoadMap();
+    DC::LoadCountMaps++;
+    print("[ MAPA ] Interior GAngues carregado com sucesso\n"); 
     return 1;
 }
 
@@ -53,5 +86,11 @@ hook OnPlayerConnect(playerid)
     Ammu::RemoveGTAObjects(playerid);
     Bank::RemoveGTAObjects(playerid, MAP_BANK_LOTTERY);
     House::RemoveGTAObjects(playerid);
+    Groove::RemoveGTAObjects(playerid);
+    Hospital::RemoveGTAObjects(playerid);
+    Triad_RemoveGTAObjects(playerid);
+    PCC_RemoveGTAObjects(playerid);
+    MecBlond_RemoveGTAObjects(playerid);
+    CityHall_RemoveGTAObjects(playerid);
     return 1;
 }

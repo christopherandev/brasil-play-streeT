@@ -10,6 +10,7 @@
 //-------------------------------------------------
 
 #include <open.mp>
+#include <streamer>
 
 // Players Move Speed
 #define MOVE_SPEED              100.0
@@ -33,7 +34,7 @@
 enum noclipenum
 {
 	cameramode,
-	flyobject,
+	STREAMER_TAG_OBJECT:flyobject,
 	mode,
 	lrold,
 	udold,
@@ -107,7 +108,7 @@ public OnPlayerUpdate(playerid)
 		{
 			if((noclipdata[playerid][udold] != 0 || noclipdata[playerid][lrold] != 0) && ud == 0 && lr == 0)
 			{   // All keys have been released, stop the object the camera is attached to and reset the acceleration multiplier
-				StopPlayerObject(playerid, noclipdata[playerid][flyobject]);
+				StopDynamicObject(noclipdata[playerid][flyobject]);
 				noclipdata[playerid][mode]      = 0;
 				noclipdata[playerid][accelmul]  = 0.0;
 			}
@@ -168,7 +169,7 @@ stock MoveCamera(playerid)
 	// Calculate the cameras next position based on their current position and the direction their camera is facing
 	new Float:X, Float:Y, Float:Z;
 	GetNextCameraPosition(noclipdata[playerid][mode], CP, FV, X, Y, Z);
-	MovePlayerObject(playerid, noclipdata[playerid][flyobject], X, Y, Z, speed);
+	MoveDynamicObject(noclipdata[playerid][flyobject], X, Y, Z, speed);
 
 	// Store the last time the camera was moved as now
 	noclipdata[playerid][lastmove] = GetTickCount();
@@ -178,7 +179,7 @@ stock MoveCamera(playerid)
 forward MovePlayerCamFly(playerid, Float:X, Float:Y, Float:Z);
 public MovePlayerCamFly(playerid, Float:X, Float:Y, Float:Z)
 {
-	SetPlayerObjectPos(playerid, noclipdata[playerid][flyobject], X, Y, Z);
+	SetDynamicObjectPos(noclipdata[playerid][flyobject], X, Y, Z);
 	return 1;
 }
 
@@ -250,7 +251,8 @@ stock CancelFlyMode(playerid)
 	CancelEdit(playerid);
 	TogglePlayerSpectating(playerid, false);
 	SetPlayerPos(playerid, 	noclipdata[playerid][old_pos][0], noclipdata[playerid][old_pos][1], noclipdata[playerid][old_pos][2]);
-	DestroyPlayerObject(playerid, noclipdata[playerid][flyobject]);
+	DestroyDynamicObject(noclipdata[playerid][flyobject]);
+	noclipdata[playerid][flyobject] = INVALID_OBJECT_ID;
 	noclipdata[playerid][cameramode] = CAMERA_MODE_NONE;
 	return 1;
 }
@@ -269,12 +271,12 @@ public FlyMode(playerid, Float:X, Float:Y, Float:Z)
 	noclipdata[playerid][old_pos][1] = Y;
 	noclipdata[playerid][old_pos][2] = Z;
 
-	noclipdata[playerid][flyobject] = CreatePlayerObject(playerid, 19300, X, Y, Z, 0.0, 0.0, 0.0);
+	noclipdata[playerid][flyobject] = CreateDynamicObject(19300, X, Y, Z, 0.0, 0.0, 0.0, .playerid = playerid);
 
 	// Place the player in spectating mode so objects will be streamed based on camera location
 	TogglePlayerSpectating(playerid, true);
 	// Attach the players camera to the created object
-	AttachCameraToPlayerObject(playerid, noclipdata[playerid][flyobject]);
+	AttachCameraToDynamicObject(playerid, noclipdata[playerid][flyobject]);
 
 	SetPVarInt(playerid, "FlyMode", 1);
 	noclipdata[playerid][cameramode] = CAMERA_MODE_FLY;

@@ -1,4 +1,4 @@
-#define abs(%0)                                 (((%0) < 0)?(-(%0)):((%0)))
+#define abs(%0) (((%0) < 0)?(-(%0)):((%0)))
 
 stock ClearChat(playerid, cells = 15)
 {
@@ -18,23 +18,19 @@ stock GetFlag(flag, tag_binary)
 stock ResetFlag(&flag, tag_binary) 
     flag &= ~tag_binary;
 
-stock IsFlagSet(flag, tag_binary) 
-    return (flag & tag_binary) ? 1 : 0;
-
-stock ClearAllFlags(&flag) 
-    return (flag = 0x00000000);
-
 stock GetISODate(timestr[], len, HourGMT, MinuteGMT = 0)
 {
     new year, month, day, hour, minute, second;
+    
     TimestampToDate(gettime(), year, month, day, hour, minute, second, HourGMT);
-    format(timestr, len, "%04d-%02d-%02dT%02d:%02d:%02d%c%02d:%02d",
+    
+    format(timestr, len, 
+    "%04d-%02d-%02dT%02d:%02d:%02d%c%02d:%02d",
     year, month, day, hour, minute, second, HourGMT > 0 ? '+' : '-', abs(HourGMT), MinuteGMT);
 }
 
 stock TimestampToDate(Timestamp, &year, &month, &day, &hour, &minute, &second, HourGMT, MinuteGMT = 0)
 {
-    // Ajuste de fuso horário
     Timestamp += (HourGMT * 3600) + (MinuteGMT * 60);
 
     second = Timestamp % 60;
@@ -42,12 +38,9 @@ stock TimestampToDate(Timestamp, &year, &month, &day, &hour, &minute, &second, H
     minute = t_minute % 60;
     new t_hour = t_minute / 60;
     hour = t_hour % 24;
-
     // Algoritmo de Howard Hinnant para dias
     new days = t_hour / 24;
-    
-    // Ajuste de época: Hinnant utiliza 01/03/0000 como base
-    // Dias entre 01/01/1970 e 01/03/0000 = 719468
+
     days += 719468;
 
     new era = (days >= 0 ? days : days - 146096) / 146097;
@@ -63,59 +56,23 @@ stock TimestampToDate(Timestamp, &year, &month, &day, &hour, &minute, &second, H
 }
 
 stock GetWeekDayFromTimestamp(timestamp, Hour_GMT = -3)
-{
-    // 86400 segundos em um dia
-    // Adicionamos 4 dias ao cálculo porque 01/01/1970 foi Quinta-feira (4º dia da semana)
-    // Se você quer que Domingo seja 0, Segunda 1, etc.
-    
-    new dayOfWeek = (((timestamp + (Hour_GMT * 3600)) / 86400) + 4) % 7;
-    
-    return dayOfWeek; 
-    // Retorna: 0 = Domingo, 1 = Segunda, 2 = Terça... 6 = Sábado
-}
+    return ((((timestamp + (Hour_GMT * 3600)) / 86400) + 4) % 7); 
 
 stock GetTimestampString(string[64], timestamp, HourGMT = -3)
 {
     new year, month, day, hour, minute, second;
     
     TimestampToDate(timestamp, year, month, day, hour, minute, second, HourGMT);
-    format(string, 64, "%02d de %s de %04d as %02d:%02d:%02d", day, gMonths[month], year, hour, minute, second);
+    
+    format(string, 64, 
+    "%02d de %s de %04d as %02d:%02d:%02d", 
+    day, gMonths[month], year, hour, minute, second);
 }
-
-stock IsValidPlayerName(name[], &issue)
-{        
-    if(strlen(name) < 3 || strlen(name) > MAX_PLAYER_NAME)
-    {
-        issue = 2;
-        return 0;
-    }
-
-    issue = 1;
-
-    for(new i = 0; name[i]; i++)
-    {
-        switch(name[i])
-        {
-            case '\0': continue;
-            case 32: name[i] = '_';
-            case 48..57: continue;
-            case 65..90: continue;
-            case 95: continue;
-            case 97..122: continue;
-            default: return 0;
-        }
-    }
-
-    issue = 0;
-
-    return 1;
-} 
 
 stock RemoveGraphicAccent(str[])
 {
     for(new i = 0; str[i] != '\0'; i++)
     {
-        // Usamos o valor numérico do caractere para evitar erros de encoding no compilador
         switch(str[i])
         {
             case 0xE0..0xE3: str[i] = 'a'; // à á â ã
@@ -137,25 +94,6 @@ stock RemoveGraphicAccent(str[])
             case 0xC7: str[i] = 'C'; // Ç
         }
     }
-}
-
-stock norm_hash(hash)
-{
-    if(hash < 0)
-        hash = -hash;
-    return hash;
-}
-
-stock hashname(const name[])
-{
-    new hash = 0;
-
-    for(new i = 0; name[i]; i++)
-    {
-        hash = hash * 131 ^ name[i];
-    }
-
-    return hash;
 }
 
 stock Float:floatclamp(Float:value, Float:min, Float:max)
@@ -191,9 +129,21 @@ stock GetVehicleNameByModel(modelid, vehname[], len = sizeof(vehname))
 { 
     if(modelid < 400 || modelid > 611)
         format(vehname, len, "Modelo Invalido");
-    
     else 
-        format(vehname, len, "%s", g_arrVehicleNames[modelid - 400]);
+        format(vehname, len, "%s", gVehicleNames[modelid - 400]);
+}
+
+stock GetVehicleModelByName(const name[]) 
+{
+    if (isnull(name)) return -1;
+
+    for (new i = 0; i < sizeof(gVehicleNames); i++) 
+    {
+        if (strfind(gVehicleNames[i], name, true) != -1) {
+            return i + 400;
+        }
+    }
+    return -1;
 }
 
 stock GetPlayerNameStr(playerid)
@@ -204,15 +154,96 @@ stock GetPlayerNameStr(playerid)
 	return name;
 }
 
-stock GetVehicleModelByName(const name[]) 
-{
-    if (isnull(name)) return -1;
+#define MAX_POSITION_ATTEMPTS 15
+#define MAX_HEIGHT_DIFFERENCE 3.0
 
-    for (new i = 0; i < sizeof(g_arrVehicleNames); i++) 
+stock bool:GetRandomPositionAround(
+    Float:originX,
+    Float:originY,
+    Float:originZ,
+    Float:range_min,
+    Float:range_max,
+    &Float:outX,
+    &Float:outY,
+    &Float:outZ
+)
+{
+    new Float:angle;
+    new Float:distance;
+    new Float:testX, Float:testY;
+    new Float:hitX, Float:hitY, Float:hitZ;
+
+    for(new i = 0; i < MAX_POSITION_ATTEMPTS; i++)
     {
-        if (strfind(g_arrVehicleNames[i], name, true) != -1) {
-            return i + 400;
+        // Ângulo aleatório (0 a 360 graus)
+        angle = floatsub(floatmul(float(random(10000)), 0.036), 180.0);
+
+        // Distância aleatória dentro da coroa circular
+        distance = floatadd(
+            range_min,
+            floatmul(
+                float(random(10000)) / 10000.0,
+                (range_max - range_min)
+            )
+        );
+
+        // Converter para coordenadas
+        testX = floatadd(originX, floatmul(distance, floatsin(angle, degrees)));
+        testY = floatadd(originY, floatmul(distance, floatcos(angle, degrees)));
+
+        // Raycast do alto até baixo
+        if(CA_RayCastLine(
+            testX,
+            testY,
+            originZ + 50.0,
+            testX,
+            testY,
+            originZ - 50.0,
+            hitX,
+            hitY,
+            hitZ
+        ))
+        {
+            // Validar diferença de altura
+            if(floatabs(floatsub(hitZ, originZ)) <= MAX_HEIGHT_DIFFERENCE)
+            {
+                outX = hitX;
+                outY = hitY;
+                outZ = hitZ;
+
+                return true;
+            }
         }
     }
-    return -1;
+
+    return false;
+}
+
+stock RemoverChar(string[], element)
+{
+    new i = 0, j = 0;
+    while(string[i] != '\0') 
+    {
+        if(string[i] != element) 
+        {
+            string[j++] = string[i];
+        }
+        i++;
+    }
+    
+    string[j] = '\0';
+}
+
+stock DC::Log(LOG_TYPES:type, const msg[], GLOBAL_TAG_TYPES:...)
+{
+    new str[256];
+    va_format(str, 256, msg, ___(2));
+
+    switch(type)
+    {
+        case LOG_TYPE_ERR:  DC::SendErrMessage(str);
+        case LOG_TYPE_WARN: DC::SendWarnMessage(str);
+    }
+
+    return 1;
 }

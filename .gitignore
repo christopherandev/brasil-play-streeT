@@ -5,8 +5,11 @@ log.txt
 *.txt
 # AMX
 .vscode/
+*.amx
 
 # PASTAS
 scriptfiles/bps_Server.db
 npcmodes/
-models/
+
+#JSON
+config.json
