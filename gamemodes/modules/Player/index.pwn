@@ -1,0 +1,8 @@
+#include "./gamemodes/modules/Player/header.pwn"
+#include "./gamemodes/modules/Player/core.pwn"
+#include "./gamemodes/modules/Player/ui.pwn"
+#include "./gamemodes/modules/Player/acessory/index.pwn"
+#include "./gamemodes/modules/Player/injury/index.pwn"
+#include "./gamemodes/modules/Player/login/index.pwn"
+#include "./gamemodes/modules/Player/payday/index.pwn"
+#include "./gamemodes/modules/Player/punishment/index.pwn"

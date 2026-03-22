@@ -63,3 +63,21 @@ enum E_PLAYER_TIMERS
 new pyr::Timer[MAX_PLAYERS][E_PLAYER_TIMERS];
 
 forward Player::Kick(playerid, E_PLAYER_TIMERS:timerid, const msg[]);
+
+new Text:Baseboard::PublicTD[13] = {INVALID_TEXT_DRAW, ...};
+new PlayerText:Baseboard::PlayerTD[MAX_PLAYERS][5] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+new PlayerText:Travel::PlayerTD[MAX_PLAYERS][2] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+
+enum _:E_TD_BASEBOARD
+{
+    Text:TD_BASEBOARD_CLOCK = 4,
+}
+
+enum _:E_PTD_BASEBOARD
+{
+    PlayerText:PTD_BASEBOARD_CPF,
+    PlayerText:PTD_BASEBOARD_PAYDAY,
+    PlayerText:PTD_BASEBOARD_MONEY,
+    PlayerText:PTD_BASEBOARD_LVL,
+    PlayerText:PTD_BASEBOARD_BITCOIN,
+}

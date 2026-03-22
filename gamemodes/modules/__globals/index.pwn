@@ -1,0 +1,5 @@
+#include "./gamemodes/modules/__globals/dependencies.pwn"
+#include "./gamemodes/modules/__globals/shared.pwn"
+#include "./gamemodes/modules/__globals/modules.pwn"
+#include "./gamemodes/modules/__globals/handles.pwn"
+#include "./gamemodes/modules/__globals/commands.pwn"

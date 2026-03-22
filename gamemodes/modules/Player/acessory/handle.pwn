@@ -1,5 +1,20 @@
 #include <YSI\YSI_Coding\y_hooks>
 
+hook OnGameModeInit()
+{
+    Acessory::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Editor de acessorios carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Acessory::DestroyPublicTD();
+    return 1;
+}
+
 hook OnPlayerSpawn(playerid)
 {
     for(new i = 0; i < 10; i++)

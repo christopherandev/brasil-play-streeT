@@ -84,3 +84,40 @@ new Float:Acessory::gCamOffset[][6] =
     {-0.700195,  0.053222,  0.711026, -0.958514,  0.242879, -0.149198},
     {0.631713,   0.252441,  0.760899,  0.986556,  0.033236, -0.160004}
 };
+
+new Text:Acessory::PublicTD[21] = {INVALID_TEXT_DRAW, ...};
+new PlayerText:Acessory::PlayerTD[MAX_PLAYERS][14] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+
+enum _:E_TD_ACESSORY
+{
+    Text:TD_ACS_OFFSET_POS_MINUS = 3,
+    Text:TD_ACS_OFFSET_ANG_MINUS = 4,
+    Text:TD_ACS_OFFSET_SCL_MINUS = 5,
+    Text:TD_ACS_OFFSET_POS_PLUS = 6,
+    Text:TD_ACS_OFFSET_ANG_PLUS = 7,
+    Text:TD_ACS_OFFSET_SCL_PLUS = 8,
+    Text:TD_ACS_SAVE_BTN = 9,
+    Text:TD_ACS_CHANGE_VIEW_BTN = 10,
+    Text:TD_ACS_EXIT_BTN = 11,
+    Text:TD_ACS_OFFSET_POS_BTN = 14,
+    Text:TD_ACS_OFFSET_ANG_BTN = 15,
+    Text:TD_ACS_OFFSET_SCL_BTN = 16,
+}
+
+enum _:E_PTD_ACESSORY
+{
+    PlayerText:PTD_ACS_MODEL_1,
+    PlayerText:PTD_ACS_MODEL_2,
+    PlayerText:PTD_ACS_MODEL_3,
+    PlayerText:PTD_ACS_MODEL_4,
+    PlayerText:PTD_ACS_MODEL_5,
+    PlayerText:PTD_ACS_OFFSET_POS,
+    PlayerText:PTD_ACS_OFFSET_ANG,
+    PlayerText:PTD_ACS_OFFSET_SCL,
+    PlayerText:PTD_ACS_POS_AXIS_BTN,
+    PlayerText:PTD_ACS_ANG_AXIS_BTN,
+    PlayerText:PTD_ACS_SCL_AXIS_BTN,
+    PlayerText:PTD_ACS_POS_AXIS,
+    PlayerText:PTD_ACS_ANG_AXIS,
+    PlayerText:PTD_ACS_SCL_AXIS,
+}

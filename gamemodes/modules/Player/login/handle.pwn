@@ -1,5 +1,20 @@
 #include <YSI\YSI_Coding\y_hooks>
 
+hook OnGameModeInit()
+{
+    Login::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Login carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Login::DestroyPublicTD();
+    return 1;
+}
+
 public OnPlayerPasswordHash(playerid, hashid)
 {
     #pragma unused hashid
