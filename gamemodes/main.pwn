@@ -1,5 +1,5 @@
-#define MAX_PLAYERS (50)
-#define MAX_NPCS    (2)
+#define MAX_PLAYERS     (50)
+#define MAX_NPCS        (2)
 
 #include <open.mp>
 #include <sscanf2>
@@ -8,7 +8,7 @@
 #include <PawnPlus>
 #include <discord-connector>
 
-#define CGEN_MEMORY 20000
+#define CGEN_MEMORY     20000
 
 #define ON_DEBUG_MODE
 
