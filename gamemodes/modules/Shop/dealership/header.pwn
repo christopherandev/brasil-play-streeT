@@ -118,25 +118,3 @@ stock GetVehicleShopData(cat, index, &modelid, &Float:price)
 }
 
 forward DSP_UpdateCarRotate(playerid, vehicleid);
-
-new Text:Dealership::PublicTD[13] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Dealership::PlayerTD[MAX_PLAYERS][5] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
-
-enum _:E_TD_DSP
-{
-    Text:TD_DSP_BTN_PREV = 3,
-    Text:TD_DSP_BTN_NEXT = 4,
-    Text:TD_DSP_BTN_BUY = 7,
-    Text:TD_DSP_BTN_QUIT = 6,
-    Text:TD_DSP_BTN_HIDE = 9,
-    Text:TD_DSP_BTN_CAT = 8,
-}
-
-enum _:E_PTD_DSP
-{
-    PlayerText:PTD_DSP_TXT_NAME,
-    PlayerText:PTD_DSP_TXT_PRICE,
-    PlayerText:PTD_DSP_SPR_COLOR1,
-    PlayerText:PTD_DSP_SPR_COLOR2,
-    PlayerText:PTD_DSP_TXT_HIDE,
-}

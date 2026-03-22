@@ -75,36 +75,3 @@ forward OnVehicleEmptyTimeout(vehicleid, forplayerid);
 
 #define FUEL_PRICE_PER_LITER (6.28)
 #define ARMOUR_PRICE_PER_HP  (6.0)
-
-new Text:Veh::PublicTD[11] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Veh::PlayerTD[MAX_PLAYERS][18] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
-new Text:Garage::PublicTD[12] = {INVALID_TEXT_DRAW, ...};
-new PlayerText:Garage::PlayerTD[MAX_PLAYERS][7] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
-
-enum _:E_PTD_VEH
-{
-    PlayerText:PTD_VEH_BAR_FUEL,
-    PlayerText:PTD_VEH_TXT_SPEED,
-    PlayerText:PTD_VEH_BAR_HEALTH,
-    PlayerText:PTD_VEH_BAR_ARMOUR,
-    PlayerText:PTD_VEH_FIRST_DOT = 4,
-    PlayerText:PTD_VEH_LAST_DOT = 16,
-    PlayerText:PTD_VEH_TXT_NAME = 17,
-}
-
-enum _:E_TD_GRG
-{
-    Text:TD_GRG_BTN_PREV = 9,
-    Text:TD_GRG_BTN_NEXT = 10,
-}
-
-enum _:E_PTD_GRG
-{
-    PlayerText:PTD_GRG_TXT_NAME,
-    PlayerText:PTD_GRG_BAR_HEALTH,
-    PlayerText:PTD_GRG_BAR_FUEL,
-    PlayerText:PTD_GRG_BAR_ARMOUR,
-    PlayerText:PTD_GRG_TXT_PAGE,
-    PlayerText:PTD_GRG_SPR_COLOR1,
-    PlayerText:PTD_GRG_SPR_COLOR2,
-}

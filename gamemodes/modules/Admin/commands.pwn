@@ -861,7 +861,7 @@ YCMD:veh(playerid, params[], help)
         return SendClientMessage(playerid, -1, "{ff3333}[ VEH ] {ffffff}Você não pode criar veículos aqui!");
 
     new modelid, veh_name[32], color1, color2;
-    if(sscanf(params, "i", modelid, color1, color2)) 
+    if(sscanf(params, "iii", modelid, color1, color2)) 
     {
         if(sscanf(params, "s[32]ii", veh_name, color1, color2)) 
             return SendClientMessage(playerid, -1, "{ff3333}[ CMD ] {ffffff}Use: /veh {ff3333}[ MODELID ou NOME]");
