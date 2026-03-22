@@ -1,0 +1,5 @@
+#include "./gamemodes/modules/Vehicle/header.pwn"
+#include "./gamemodes/modules/Vehicle/core.pwn"
+#include "./gamemodes/modules/Vehicle/ui.pwn"
+#include "./gamemodes/modules/Vehicle/handle.pwn"
+#include "./gamemodes/modules/Vehicle/commands.pwn"

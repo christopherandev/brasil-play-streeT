@@ -1,5 +1,25 @@
 #include <YSI\YSI_Coding\y_hooks>
 
+hook OnGameModeInit()
+{
+    Veh::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Velocimetro carregada\n");
+    DC::LoadCountTextDraws++;
+
+    Garage::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Garagem carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Veh::DestroyPublicTD();
+    Garage::DestroyPublicTD();
+    return 1;
+}
+
 hook OnVehicleUpdate(driverid, vehicleid)
 {
     new Float:Nhealth;

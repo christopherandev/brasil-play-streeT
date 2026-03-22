@@ -45,3 +45,28 @@ new List:pyr::gSpectables;
 forward OnSpectatorListUpdate(spectatorid, reason);
 
 forward ban_input_dialog(playerid, dialogid, response, listitem, string:inputtext[]);
+
+new Text:Adm::PublicTD[14] = {INVALID_TEXT_DRAW, ...};
+new PlayerText:Adm::PlayerTD[MAX_PLAYERS][9] = {{INVALID_PLAYER_TEXT_DRAW, ...}, ...};
+
+enum _:E_TD_ADMIN
+{
+    Text:TD_ADM_BTN_LEFT = 2,
+    Text:TD_ADM_BTN_RIGHT = 3, 
+    Text:TD_ADM_BTN_VIEW_INV = 6,
+    Text:TD_ADM_BTN_PANEL = 7,
+    Text:TD_ADM_BTN_HIDE = 8,
+}
+
+enum _:E_PTD_ADMIN
+{
+    PlayerText:PTD_ADM_TXT_NAME,
+    PlayerText:PTD_ADM_TXT_ROLE,
+    PlayerText:PTD_ADM_TXT_ID,
+    PlayerText:PTD_ADM_BAR_HEALTH,
+    PlayerText:PTD_ADM_BAR_ARMOUR,
+    PlayerText:PTD_ADM_TXT_WORLD,
+    PlayerText:PTD_ADM_TXT_PING,
+    PlayerText:PTD_ADM_TXT_STATE,
+    PlayerText:PTD_ADM_TXT_ORGNAME,
+}

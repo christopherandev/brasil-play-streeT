@@ -1,5 +1,20 @@
 #include <YSI/YSI_Coding/y_hooks>
 
+hook OnGameModeInit()
+{
+    Dealership::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Concessionaria carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Dealership::DestroyPublicTD();
+    return 1;
+}
+
 hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
 {
     new 
