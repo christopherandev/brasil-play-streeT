@@ -5,6 +5,16 @@ hook OnGameModeInit()
     AdminList = list_new();
     printf("[ LISTA ] Lista de Admins criada com sucesso!\n");
 
+    Adm::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Administracao carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Adm::DestroyPublicTD();
     return 1;
 }
 

@@ -57,6 +57,21 @@ hook OnPlayerConnect(playerid)
 
 #endif
 
+hook OnGameModeInit()
+{
+    Baseboard::CreatePublicTD();
+    printf("[ TEXTDRAW ] TextDraw: Rodape carregada\n");
+    DC::LoadCountTextDraws++;
+
+    return 1;
+}
+
+hook OnGameModeExit()
+{
+    Baseboard::DestroyPublicTD();
+    return 1;
+}
+
 hook OnPlayerDisconnect(playerid, reason)
 {
     if(IsPlayerNPC(playerid)) return -1;
