@@ -1,0 +1,6 @@
+#include "./gamemodes/modules/Player/commands.pwn"
+#include "./gamemodes/modules/Organization/commands.pwn"
+#include "./gamemodes/modules/Admin/commands.pwn"
+#include "./gamemodes/modules/Vehicle/commands.pwn"
+#include "./gamemodes/modules/Games/commands.pwn"
+#include "./gamemodes/modules/Shop/commands.pwn"

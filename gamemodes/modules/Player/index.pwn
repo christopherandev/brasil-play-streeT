@@ -6,5 +6,3 @@
 #include "./gamemodes/modules/Player/login/index.pwn"
 #include "./gamemodes/modules/Player/payday/index.pwn"
 #include "./gamemodes/modules/Player/punishment/index.pwn"
-#include "./gamemodes/modules/Player/handle.pwn"
-#include "./gamemodes/modules/Player/commands.pwn"
