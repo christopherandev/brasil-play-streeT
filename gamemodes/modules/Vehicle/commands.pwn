@@ -220,11 +220,11 @@ YCMD:abastecer(playerid, params[], help)
     if(Player[playerid][pyr::regionid] != 27)
         return SendClientMessage(playerid, -1, "{ff3333}[ GAS ] {ffffff}Você nao esta perto da bomba de combustível.");
 
-    for(new i = 0; i < sizeof(Gas); i++)
+    for(new i = 0; i < sizeof(Compy::Gas); i++)
     {
-        if(IsPlayerInRangeOfPoint(playerid, 2.0, Gas[i][gas::pX], Gas[i][gas::pY], Gas[i][gas::pZ]))
+        if(IsPlayerInRangeOfPoint(playerid, 2.0, Compy::Gas[i][gas::pX], Compy::Gas[i][gas::pY], Compy::Gas[i][gas::pZ]))
             break;
-        if(i == sizeof(Gas) - 1)
+        if(i == sizeof(Compy::Gas) - 1)
             return SendClientMessage(playerid, -1, "{ff3333}[ GAS ] {ffffff}Você nao esta perto da bomba de combustível.");
     }
 
@@ -300,8 +300,8 @@ YCMD:oficina(playerid, params[], help)
 {
     if(!GetFlag(Player[playerid][pyr::flags], FLAG_PLAYER_LOGGED)) return 1;
 
-    if(Player[playerid][pyr::regionid] != 27 || !IsPlayerInRangeOfPoint(playerid, 2.0, Mec[ofc::pX], Mec[ofc::pY], Mec[ofc::pZ]))
-        return SendClientMessage(playerid, -1, "{ff3333}[ MEC ] {ffffff}Você nao dentro da oficina mecânica.");
+    // if(Player[playerid][pyr::regionid] != 27 || !IsPlayerInRangeOfPoint(playerid, 2.0, Mec[ofc::pX], Mec[ofc::pY], Mec[ofc::pZ]))
+    //     return SendClientMessage(playerid, -1, "{ff3333}[ MEC ] {ffffff}Você nao dentro da oficina mecânica.");
     
     new vehicleid = GetPlayerVehicleID(playerid);
 

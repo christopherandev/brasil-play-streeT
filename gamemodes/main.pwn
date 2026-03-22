@@ -34,7 +34,15 @@
 #include "./gamemodes/modules/utils.pwn"
 //  --------------------  GLOBAL HEADERS -----------------------
 
-#include "./gamemodes/modules/Admin/header.pwn"                                      
+#include "./gamemodes/modules/Admin/header.pwn"  
+
+//  ------------------------- COMPANY --------------------------
+//                          [    GAS_STATION    ]
+#include "./gamemodes/modules/Company/gas_station/header.pwn"  
+//                          [     MECANICAL     ]
+#include "./gamemodes/modules/Company/mecanical/header.pwn"  
+//  ------------------------- COMPANY --------------------------
+
 #include "./gamemodes/modules/DB/header.pwn"
 #include "./gamemodes/modules/Discord/header.pwn"
 #include "./gamemodes/modules/Games/header.pwn"
@@ -80,28 +88,6 @@
 #include "./gamemodes/modules/LinkedLists/players/core.pwn"
 #include "./gamemodes/modules/LinkedLists/vehicles/core.pwn"
 //  ------------------------- PLAYERS --------------------------
-
-//  --------------------------- MAPAS -----------------------------
-#include "./gamemodes/modules/Maps/core/banks.pwn"
-#include "./gamemodes/modules/Maps/core/dealership.pwn"
-#include "./gamemodes/modules/Maps/core/garages.pwn"
-#include "./gamemodes/modules/Maps/core/mechanicals.pwn"
-#include "./gamemodes/modules/Maps/core/police_org.pwn"
-#include "./gamemodes/modules/Maps/core/spawns.pwn"
-#include "./gamemodes/modules/Maps/core/squares.pwn"
-#include "./gamemodes/modules/Maps/core/store.pwn"
-#include "./gamemodes/modules/Maps/core/prision.pwn"
-#include "./gamemodes/modules/Maps/core/arena.pwn"
-#include "./gamemodes/modules/Maps/core/ammu.pwn"
-#include "./gamemodes/modules/Maps/core/house.pwn"
-#include "./gamemodes/modules/Maps/core/hospital.pwn"
-#include "./gamemodes/modules/Maps/core/cityhall.pwn"
-#include "./gamemodes/modules/Maps/organizations/gangint.pwn"
-#include "./gamemodes/modules/Maps/organizations/groove.pwn"
-#include "./gamemodes/modules/Maps/organizations/triad.pwn"
-#include "./gamemodes/modules/Maps/organizations/pcc.pwn"
-#include "./gamemodes/modules/Maps/organizations/mecblond.pwn"
-//  --------------------------- MAPAS -----------------------------
 
 #include "./gamemodes/modules/Organization/core.pwn"
 #include "./gamemodes/modules/Player/core.pwn"
@@ -153,6 +139,14 @@
 #include "./gamemodes/modules/LinkedLists/handle.pwn"
 
 #include "./gamemodes/modules/Server/handle.pwn"
+
+//  ------------------------- COMPANY --------------------------
+//                          [    GAS_STATION    ]
+#include "./gamemodes/modules/Company/gas_station/handle.pwn"  
+//                          [     MECANICAL     ]
+#include "./gamemodes/modules/Company/mecanical/handle.pwn"  
+//  ------------------------- COMPANY --------------------------
+
 #include "./gamemodes/modules/Discord/handle.pwn"
 #include "./gamemodes/modules/Maps/handle.pwn"
 #include "./gamemodes/modules/TextDraws/handle.pwn"

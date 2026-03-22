@@ -2,7 +2,9 @@
 *.log
 logs/
 log.txt
-*.txt
+svlog.txt
+functional.txt
+funcs.txt
 # AMX
 .vscode/
 *.amx

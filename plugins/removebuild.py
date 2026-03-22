@@ -4,13 +4,13 @@ import os
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
-os.chdir("../scriptfiles")
+os.chdir("../scriptfiles/removebuilds")
 
 INPUT_FILE = "removebuilds.txt"
 DB_FILE = "allbuildings.db"
 
-MARGIN = 0.250
-EPS = 0.001  # tolerância para comparar floats
+MARGIN = 1
+EPS = 0.1  # tolerância para comparar floats
 
 # ----------------------------
 # ler objetos a remover
@@ -20,7 +20,7 @@ remove_points = []
 
 with open(INPUT_FILE) as f:
     for line in f:
-        model, x, y, z = line.strip().split(",")
+        playerid, model, x, y, z, radius = line.strip().split(",")
         remove_points.append((int(model), float(x), float(y), float(z)))
 
 # ----------------------------
@@ -60,7 +60,6 @@ def same_pos(a, b):
     )
 
 remove_positions = [(p[1], p[2], p[3]) for p in remove_points]
-
 
 # ----------------------------
 # conectar banco
@@ -102,8 +101,8 @@ for model, lod, x, y, z, rx, ry, rz in rows:
         continue
 
     print(
-        f"CreateDynamicObject({model}, {x:.3f}, {y:.3f}, {z:.3f}, "
-        f"{rx:.3f}, {ry:.3f}, {rz:.3f});"
+        f"CreateDynamicObject({model}, {x:.4f}, {y:.4f}, {z:.4f}, "
+        f"{rx:.3f}, {ry:.3f}, {rz:.3f}, -1, -1, -1, 300.00, 300.00);"
     )
 
 

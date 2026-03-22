@@ -9,4 +9,4 @@ enum E_COMPY_GAS
     STREAMER_TAG_3D_TEXT_LABEL:gas::label[2],
 }
 
-new Compy::Gas[MAX_COMPY_GAS][E_MAP_GAS];
+new Compy::Gas[MAX_COMPY_GAS][E_COMPY_GAS];

@@ -1,42 +1,14 @@
-enum _:E_MAP_SQUARE
+#define MAX_REMOVE_BUILDING (1000)
+
+enum E_REMOVE_BUILDS
 {
-    MAP_SQUARE_HP = 1,
-    MAP_SQUARE_LS
+	map::modelid,
+	Float:map::pX,
+	Float:map::pY,
+	Float:map::pZ,
+	Float:map::range,
 }
 
-enum _:E_MAP_MEC
-{
-    MAP_MEC_LS = 1,
-    MAP_MEC_AIRPORT,
-    MAP_MEC_DROP,
-}
+new RemovedBuilding[MAX_REMOVE_BUILDING][E_REMOVE_BUILDS];
 
-enum _:E_MAP_STORE
-{
-    MAP_STORE_247 = 1,
-    MAP_STORE_BINCO,
-}
 
-enum _:E_MAP_BANK
-{
-    MAP_BANK_NU = 1,
-    MAP_BANK_LOTTERY,
-}
-
-enum E_MAP_GAS
-{
-    Float:gas::pX, Float:gas::pY, Float:gas::pZ,
-    STREAMER_TAG_PICKUP:gas::pickup,
-    STREAMER_TAG_3D_TEXT_LABEL:gas::label,
-}
-
-enum E_MECANIC
-{
-    Float:ofc::pX, Float:ofc::pY, Float:ofc::pZ, 
-    STREAMER_TAG_PICKUP:ofc::pickup,
-    STREAMER_TAG_3D_TEXT_LABEL:ofc::label,
-}
-
-new Gas[2][E_MAP_GAS];
-
-new Mec[E_MECANIC];
