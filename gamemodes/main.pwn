@@ -11,6 +11,7 @@
 #include <samp_bcrypt>
 #include <PawnPlus>
 #include <discord-connector>
+#include <requests>
 
 #include <YSI/YSI_Data/y_iterate>
 #include <YSI/YSI_Coding/y_va>
@@ -24,6 +25,156 @@
 #include "./gamemodes/modules/__globals/cores.pwn"
 #include "./gamemodes/modules/__globals/handles.pwn"
 #include "./gamemodes/modules/__globals/commands.pwn"
+
+#define TIKTOK_BRIDGE_ENDPOINT     "http://127.0.0.1:3001"
+#define TIKTOK_BRIDGE_POLL_PATH    "/events"
+#define TIKTOK_BRIDGE_HEALTH_PATH  "/health"
+#define TIKTOK_BRIDGE_POLL_MS      (1000)
+
+static RequestsClient:g_tiktokBridge = RequestsClient:-1;
+static bool:g_tiktokBridgeReady = false;
+static Request:g_tiktokBridgeActiveRequest = Request:-1;
+
+forward TikTokBridgePoll();
+forward OnTikTokBridgeHealth(Request:id, E_HTTP_STATUS:status, Node:node);
+forward OnTikTokBridgeEvents(Request:id, E_HTTP_STATUS:status, Node:node);
+
+stock bool:TikTokBridge_IsReady()
+{
+    return IsValidRequestsClient(g_tiktokBridge) && g_tiktokBridgeReady;
+}
+
+stock TikTokBridge_Init()
+{
+    g_tiktokBridge = RequestsClient(TIKTOK_BRIDGE_ENDPOINT);
+
+    if(!IsValidRequestsClient(g_tiktokBridge))
+    {
+        printf("[ TIKTOK ] Falha ao criar RequestsClient para %s", TIKTOK_BRIDGE_ENDPOINT);
+        return 0;
+    }
+
+    printf("[ TIKTOK ] RequestsClient conectado em %s", TIKTOK_BRIDGE_ENDPOINT);
+
+    new const Request:healthRequest = RequestJSON(g_tiktokBridge, TIKTOK_BRIDGE_HEALTH_PATH, HTTP_METHOD_GET, "OnTikTokBridgeHealth");
+    if(!IsValidRequest(healthRequest))
+    {
+        printf("[ TIKTOK ] Falha ao enviar requisicao de healthcheck");
+        return 0;
+    }
+
+    return 1;
+}
+
+stock TikTokBridge_PollStart()
+{
+    SetTimer("TikTokBridgePoll", TIKTOK_BRIDGE_POLL_MS, true);
+    printf("[ TIKTOK ] Poll de eventos iniciado a cada %dms", TIKTOK_BRIDGE_POLL_MS);
+    return 1;
+}
+
+public TikTokBridgePoll()
+{
+    if(!TikTokBridge_IsReady()) return 1;
+    if(IsValidRequest(g_tiktokBridgeActiveRequest)) return 1;
+
+    g_tiktokBridgeActiveRequest = RequestJSON(g_tiktokBridge, TIKTOK_BRIDGE_POLL_PATH, HTTP_METHOD_GET, "OnTikTokBridgeEvents");
+
+    if(!IsValidRequest(g_tiktokBridgeActiveRequest))
+    {
+        printf("[ TIKTOK ] Falha ao solicitar fila de eventos");
+        g_tiktokBridgeActiveRequest = Request:-1;
+    }
+
+    return 1;
+}
+
+stock TikTokBridge_ProcessEvent(Node:eventNode)
+{
+    new eventType[24], uniqueId[64], nickname[64], message[192], giftName[64], repeatCount;
+    JsonGetString(eventNode, "type", eventType);
+    JsonGetString(eventNode, "id", uniqueId);
+    JsonGetString(eventNode, "nickname", nickname);
+    JsonGetString(eventNode, "message", message);
+    JsonGetString(eventNode, "giftName", giftName);
+    JsonGetInt(eventNode, "repeatCount", repeatCount);
+
+    if(!strcmp(eventType, "chat"))
+    {
+        printf("[ TIKTOK CHAT ] #%s | %s: %s", uniqueId, nickname, message);
+    }
+    else if(!strcmp(eventType, "gift"))
+    {
+        if(repeatCount < 1) repeatCount = 1;
+        printf("[ TIKTOK GIFT ] #%s | %s enviou %s x%d", uniqueId, nickname, giftName, repeatCount);
+    }
+    else
+    {
+        printf("[ TIKTOK EVENT ] #%s | tipo=%s | usuario=%s", uniqueId, eventType, nickname);
+    }
+
+    return 1;
+}
+
+public OnTikTokBridgeHealth(Request:id, E_HTTP_STATUS:status, Node:node)
+{
+    if(status != HTTP_STATUS_OK)
+    {
+        printf("[ TIKTOK ] Healthcheck retornou status HTTP %d", _:status);
+        return 1;
+    }
+
+    new bool:ok;
+    JsonGetBool(node, "ok", ok);
+    if(!ok)
+    {
+        printf("[ TIKTOK ] Bridge respondeu healthcheck com erro logico");
+        return 1;
+    }
+
+    g_tiktokBridgeReady = true;
+    printf("[ TIKTOK ] Bridge online e pronta para receber eventos");
+    return 1;
+}
+
+public OnTikTokBridgeEvents(Request:id, E_HTTP_STATUS:status, Node:node)
+{
+    g_tiktokBridgeActiveRequest = Request:-1;
+
+    if(status != HTTP_STATUS_OK)
+    {
+        printf("[ TIKTOK ] /events retornou status HTTP %d", _:status);
+        return 1;
+    }
+
+    new Node:eventsArray;
+    if(!JsonGetArray(node, "events", eventsArray)) return 1;
+
+    new length;
+    JsonArrayLength(eventsArray, length);
+
+    for(new i = 0; i < length; i++)
+    {
+        new Node:eventNode;
+        if(!JsonArrayObject(eventsArray, i, eventNode))
+        {
+            TikTokBridge_ProcessEvent(eventNode);
+        }
+    }
+
+    return 1;
+}
+
+public OnRequestFailure(Request:id, errorCode, errorMessage[], len)
+{
+    if(id == g_tiktokBridgeActiveRequest)
+    {
+        g_tiktokBridgeActiveRequest = Request:-1;
+    }
+
+    printf("[ TIKTOK ] OnRequestFailure: request=%d code=%d msg=%s", _:id, errorCode, errorMessage);
+    return 1;
+}
 
 main()
 {
@@ -69,6 +220,13 @@ public OnGameModeExit()
     DestroyAllDynamicAreas();
 
     return 1;
+}
+
+hook OnGameModeInit()
+{
+    TikTokBridge_Init();
+    TikTokBridge_PollStart();
+    return continue();
 }
 
 hook function TogglePlayerSpectating(playerid, bool:toggle)
